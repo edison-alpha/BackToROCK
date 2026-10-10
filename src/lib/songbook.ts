@@ -47,6 +47,8 @@ export async function getSongData(id: string): Promise<ArrayBuffer | undefined> 
 }
 
 export async function saveSong(name: string, data: ArrayBuffer): Promise<void> {
+  // Ask the browser not to evict the songbook when storage runs low. Best effort: it may be refused or unsupported.
+  navigator.storage?.persist?.().catch(() => {});
   const existing = (await listSongs()).find((s) => s.name === name && s.size === data.byteLength);
   const meta: SongMeta = {
     id: existing?.id ?? crypto.randomUUID(),

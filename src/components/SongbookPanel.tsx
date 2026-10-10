@@ -7,7 +7,7 @@ import { deleteSong, getSongData, refreshSongs, type SongMeta } from "@/lib/song
 import { loadFile } from "@/lib/engine";
 import { cn } from "@/lib/utils";
 
-const DATE = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short" });
+const DATE = new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short" });
 
 function label(name: string) {
   return name.replace(/\.[^.]+$/, "");
@@ -51,7 +51,7 @@ export function SongbookPanel({ onPick }: { onPick: () => void }) {
   if (state === "error") {
     return (
       <p role="alert" className="px-3 text-sm text-[#ff7b83]">
-        Songbook tidak bisa dibuka di browser ini. Mode privat sering memblokir penyimpanan.
+        The songbook cannot be opened in this browser. Private mode often blocks storage.
       </p>
     );
   }
@@ -59,7 +59,7 @@ export function SongbookPanel({ onPick }: { onPick: () => void }) {
     return (
       <div className="flex flex-col items-center gap-2 px-3 py-6 text-center">
         <Icon icon="solar:music-library-2-linear" width={36} className="text-muted-foreground" />
-        <p className="font-medium">Songbook masih kosong</p>
+        <p className="font-medium">The songbook is empty</p>
         <p className="text-sm text-muted-foreground">
           Every file you open is saved here and stays in this browser only.
         </p>
