@@ -78,7 +78,8 @@ export function Workspace() {
   }, []);
 
   return (
-    <div className="flex h-dvh gap-0 p-2 md:gap-2">
+    // On a phone the player fills the whole screen; the padded, rounded card look is for larger screens only.
+    <div className={cn("flex h-dvh", compact ? "gap-0 p-0" : "gap-2 p-2")}>
       {compact ? (
         <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Menu">
           <div className="pb-2">
@@ -126,7 +127,10 @@ export function Workspace() {
       />
       <main
         ref={mainRef}
-        className="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card"
+        className={cn(
+          "relative flex min-w-0 flex-1 flex-col overflow-hidden bg-card",
+          !compact && "rounded-2xl border border-border",
+        )}
         onDragOver={(e) => {
           e.preventDefault();
           setDragging(true);
