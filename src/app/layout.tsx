@@ -28,7 +28,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={`${figtree.variable} ${geistMono.variable} dark h-full`}>
+    <html lang="en" className={`${figtree.variable} ${geistMono.variable} dark h-full`}>
       <body>
         <Providers>{children}</Providers>
         <Splash />

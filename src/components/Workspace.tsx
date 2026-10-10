@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { Icon } from "@iconify/react";
 import { useProfile } from "./AccountPanel";
@@ -199,6 +200,9 @@ export function Workspace() {
                 <Icon icon="solar:folder-open-linear" width={20} /> Choose file
               </button>
               <RecentSongs />
+              <Link href="/guide" className="text-sm text-muted-foreground underline-offset-4 hover:text-white hover:underline">
+                How to use · Cara memakai
+              </Link>
             </div>
           )}
 

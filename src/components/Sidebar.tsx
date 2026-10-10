@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Icon } from "@iconify/react";
 import { AccountPanel } from "./AccountPanel";
 import { SongbookPanel } from "./SongbookPanel";
@@ -87,6 +88,13 @@ export function SidebarBody({
       >
         {tab === "tracks" ? <TrackList /> : <SongbookPanel onPick={() => { setTab("tracks"); onPick?.(); }} />}
       </div>
+
+      <Link
+        href="/guide"
+        className="flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl text-sm text-muted-foreground hover:bg-white/5 hover:text-white"
+      >
+        <Icon icon="solar:book-2-linear" width={18} /> How to use
+      </Link>
 
       <AccountPanel />
     </div>
