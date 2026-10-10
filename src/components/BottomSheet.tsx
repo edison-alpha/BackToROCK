@@ -56,7 +56,7 @@ export function BottomSheet({
             aria-modal="true"
             aria-label={title}
             tabIndex={-1}
-            className="absolute inset-x-0 bottom-0 mx-auto max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-b-0 border-white/10 bg-[#1f1f1f] px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] outline-none"
+            className="absolute inset-x-0 bottom-0 mx-auto max-h-[85dvh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-3xl border border-b-0 border-white/10 bg-[#1f1f1f] px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] outline-none"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}

@@ -173,7 +173,7 @@ export function Workspace() {
           )}
         </header>
 
-        <div ref={viewportRef} className="thin-scroll relative isolate min-h-0 flex-1 overflow-auto px-2 pb-44 pt-[4.5rem] md:px-8 md:pb-[17rem]">
+        <div ref={viewportRef} className="thin-scroll relative isolate min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-2 pb-44 pt-[4.5rem] md:px-8 md:pb-[17rem]">
           <div
             className={cn(
               "mx-auto max-w-[1100px] rounded-xl bg-paper p-2 text-black md:p-4",

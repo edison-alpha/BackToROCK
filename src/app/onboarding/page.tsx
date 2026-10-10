@@ -30,9 +30,10 @@ export default function OnboardingPage() {
     setPicked(instrument);
     setError(null);
     if (status !== "authenticated") {
-      // Guests keep their choice in this browser.
+      // Guests keep their choice in this browser. A full page load is used instead of router.replace: the choice is
+      // already saved, so there is nothing to wait for, and it cannot get stuck on "Menyimpan...".
       saveGuest({ instrument });
-      router.replace("/");
+      window.location.replace("/");
       return;
     }
     try {
@@ -60,8 +61,8 @@ export default function OnboardingPage() {
   const firstName = data?.user?.name?.split(" ")[0];
 
   return (
-    <main className="grid min-h-dvh place-items-center bg-background p-6">
-      <div className="w-full max-w-2xl space-y-12 text-center">
+    <main className="flex h-dvh overflow-y-auto overscroll-contain bg-background p-6">
+      <div className="m-auto w-full max-w-2xl space-y-12 text-center">
         <header className="space-y-2">
           <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
             {firstName ? `Halo ${firstName}, instrumen utamamu?` : "Instrumen utamamu?"}

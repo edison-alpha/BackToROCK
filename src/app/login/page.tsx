@@ -50,8 +50,8 @@ function LoginForm() {
   };
 
   return (
-    <main className="grid min-h-dvh place-items-center bg-background p-4">
-      <div className="grid w-full max-w-4xl overflow-hidden rounded-3xl border border-border bg-card md:grid-cols-2">
+    <main className="flex h-dvh overflow-y-auto overscroll-contain bg-background p-4">
+      <div className="m-auto grid w-full max-w-4xl overflow-hidden rounded-3xl border border-border bg-card md:grid-cols-2">
         <div className="flex items-center justify-center bg-black p-6 md:p-10">
           <Image
             src="/logo.png"

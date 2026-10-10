@@ -79,13 +79,29 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* App-like shell: the page itself never scrolls, bounces, pulls to refresh or pans sideways. Only the inner
+     scroll areas (score, lists, sheets) move. */
   html,
   body {
     height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    overflow: hidden;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    touch-action: manipulation; /* no double-tap zoom */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  input,
+  textarea {
+    user-select: text;
+    -webkit-user-select: text;
   }
   :focus-visible {
     outline: 2px solid var(--ring);
@@ -99,14 +115,31 @@
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.04) 45%, rgba(255, 255, 255, 0.1)),
     rgba(32, 30, 32, 0.34);
-  backdrop-filter: blur(36px) saturate(200%);
-  -webkit-backdrop-filter: blur(36px) saturate(200%);
+  /* A moderate blur: the radius is the main cost, and it is recomputed every frame while the score scrolls. */
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.26);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.35),
     inset 0 -1px 0 rgba(255, 255, 255, 0.08),
-    0 16px 40px rgba(0, 0, 0, 0.5);
+    0 12px 28px rgba(0, 0, 0, 0.45);
   transform: translateZ(0);
+}
+
+/* Touch devices: live blur behind a scrolling, animating score is what makes playback stutter on phones, so use
+   a solid frosted tint instead. It still reads as glass (sheen and bright edge) but costs almost nothing. */
+@media (hover: none) and (pointer: coarse), (max-width: 767px) {
+  .glass {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.03) 45%, rgba(255, 255, 255, 0.08)),
+      rgba(34, 32, 34, 0.94);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: none;
+  }
 }
 
 /* alphaTab beat cursor and selection, tuned for the light paper. */

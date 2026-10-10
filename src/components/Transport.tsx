@@ -166,7 +166,6 @@ export function Transport() {
   const [collapsed, setCollapsed] = useState(false);
   const [sheet, setSheet] = useState(false);
   const disabled = s.status !== "ready" || !s.soundReady;
-  const progress = s.end > 0 ? Math.min(100, (s.time / s.end) * 100) : 0;
 
   const playButton = (size: string) => (
     <button
@@ -183,30 +182,31 @@ export function Transport() {
   if (collapsed) {
     return (
       <motion.div
-        layout
+        layout layoutDependency={collapsed}
         transition={{ type: "spring", duration: 0.4, bounce: 0 }}
-        style={{ borderRadius: 9999 }}
-        className="glass pointer-events-auto relative w-full max-w-sm overflow-hidden px-2 pb-3 pt-2"
+        style={{ borderRadius: 32 }}
+        className="glass pointer-events-auto relative flex w-full max-w-sm flex-col gap-1 px-3 pb-2 pt-3"
       >
         <div className="flex items-center gap-3">
           {playButton("size-11")}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{name ?? "Belum ada file"}</p>
-            <p className="text-xs tabular-nums text-white/70">
-              {formatTime(s.time)} / {formatTime(s.end)}
-            </p>
+            <p className="text-xs text-white/70">{s.playing ? "Sedang diputar" : "Dijeda"}</p>
           </div>
           <IconBtn icon="solar:alt-arrow-up-linear" label="Perluas pemutar" onClick={() => setCollapsed(false)} />
         </div>
-        <div
-          role="progressbar"
-          aria-label="Posisi lagu"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(progress)}
-          className="absolute inset-x-3 bottom-1.5 h-[3px] rounded-full bg-white/15"
-        >
-          <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+        {/* A real slider with a full-size touch area, kept in the layout (not pinned to the edge) so it can be dragged. */}
+        <div className="flex items-center gap-3 px-1">
+          <span className="w-9 shrink-0 text-right text-xs tabular-nums text-white/80">{formatTime(s.time)}</span>
+          <Slider
+            aria-label="Posisi lagu"
+            min={0}
+            max={Math.max(s.end, 1)}
+            value={[Math.min(s.time, s.end)]}
+            disabled={disabled}
+            onValueChange={(v) => seek(Array.isArray(v) ? v[0] : v)}
+          />
+          <span className="w-9 shrink-0 text-xs tabular-nums text-white/80">{formatTime(s.end)}</span>
         </div>
       </motion.div>
     );
@@ -215,7 +215,7 @@ export function Transport() {
   return (
     <>
       <motion.div
-        layout
+        layout layoutDependency={collapsed}
         transition={{ type: "spring", duration: 0.4, bounce: 0 }}
         style={{ borderRadius: 9999 }}
         className="glass pointer-events-auto flex w-full max-w-5xl items-center gap-2 px-3 py-2 md:gap-3"
