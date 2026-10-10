@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
+    "@breezystack/lamejs": "^1.2.7",
     "@coderline/alphatab": "^1.8.4",
     "@iconify/react": "^6.0.2",
     "boring-avatars": "^2.0.4",

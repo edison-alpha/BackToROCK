@@ -18,7 +18,7 @@ function loadScript(): Promise<AlphaTabNs> {
   scriptPromise ??= new Promise((resolve, reject) => {
     const el = document.createElement("script");
     el.src = `${BASE}/alphaTab.min.js`;
-    el.onload = () => (window.alphaTab ? resolve(window.alphaTab) : reject(new Error("alphaTab tidak termuat")));
+    el.onload = () => (window.alphaTab ? resolve(window.alphaTab) : reject(new Error("alphaTab did not load")));
     el.onerror = () => reject(new Error("Could not load alphaTab"));
     document.head.appendChild(el);
   });
@@ -236,6 +236,68 @@ export function seek(ms: number) {
   if (api) api.timePosition = ms;
   set({ time: ms });
 }
+const MP3_RATE = 44100;
+const MP3_KBPS = 192;
+const CHUNK_MS = 1000;
+
+function toInt16(samples: Float32Array, offset: number, count: number) {
+  const left = new Int16Array(count);
+  const right = new Int16Array(count);
+  for (let i = 0; i < count; i++) {
+    // Samples are interleaved stereo: left, right, left, right...
+    const l = Math.max(-1, Math.min(1, samples[offset + i * 2]));
+    const r = Math.max(-1, Math.min(1, samples[offset + i * 2 + 1]));
+    left[i] = l < 0 ? l * 0x8000 : l * 0x7fff;
+    right[i] = r < 0 ? r * 0x8000 : r * 0x7fff;
+  }
+  return [left, right] as const;
+}
+
+// Renders the loaded song with the synthesizer (not realtime) and encodes it to MP3. The mix follows the track
+// panel: muted tracks are silent, solo keeps only the soloed ones, and track and master volume carry over.
+// Playback speed and the metronome are not part of the file.
+export async function exportMp3(onProgress: (fraction: number) => void): Promise<Blob> {
+  const alphaTab = window.alphaTab;
+  if (!api || !alphaTab || !api.score) throw new Error("Open a song first");
+  const { tracks, masterVolume } = usePlayer.getState();
+
+  const options = new alphaTab.synth.AudioExportOptions();
+  options.sampleRate = MP3_RATE;
+  options.useSyncPoints = false;
+  options.masterVolume = masterVolume;
+  options.metronomeVolume = 0;
+  const anySolo = tracks.some((t) => t.solo);
+  options.trackVolume = new Map(tracks.map((t) => [t.index, t.muted || (anySolo && !t.solo) ? 0 : t.gain]));
+
+  const { Mp3Encoder } = await import("@breezystack/lamejs");
+  const encoder = new Mp3Encoder(2, MP3_RATE, MP3_KBPS);
+  const parts: Uint8Array<ArrayBuffer>[] = [];
+  const keep = (bytes: Uint8Array) => {
+    if (bytes.length) parts.push(new Uint8Array(bytes));
+  };
+
+  const exporter = await api.exportAudio(options);
+  try {
+    for (;;) {
+      const chunk = await exporter.render(CHUNK_MS);
+      if (!chunk) break;
+      const frames = Math.floor(chunk.samples.length / 2);
+      // The encoder takes at most a few thousand frames at a time without growing its buffer, so feed it in blocks.
+      for (let at = 0; at < frames; at += 4608) {
+        const count = Math.min(4608, frames - at);
+        const [l, r] = toInt16(chunk.samples, at * 2, count);
+        keep(encoder.encodeBuffer(l, r));
+      }
+      onProgress(chunk.endTime ? Math.min(1, chunk.currentTime / chunk.endTime) : 0);
+    }
+  } finally {
+    exporter.destroy();
+  }
+  keep(encoder.flush());
+  onProgress(1);
+  return new Blob(parts, { type: "audio/mpeg" });
+}
+
 export function destroyEngine() {
   initId++;
   api?.destroy();
