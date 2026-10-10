@@ -16,7 +16,8 @@ import { refreshSongs, saveSong } from "@/lib/songbook";
 import { useCompact } from "@/lib/use-compact";
 import { cn } from "@/lib/utils";
 
-const ACCEPT = ".gp,.gp3,.gp4,.gp5,.gpx,.gp7,.gp8,.musicxml,.mxl,.xml";
+// .gp (Guitar Pro 7/8) is a ZIP inside, and chat apps often rename it to .zip. alphaTab reads the content, not the name.
+const ACCEPT = ".gp,.gp3,.gp4,.gp5,.gpx,.gp7,.gp8,.zip,.musicxml,.mxl,.xml";
 
 export function Workspace() {
   const containerRef = useRef<HTMLDivElement>(null);
