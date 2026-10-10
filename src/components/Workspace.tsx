@@ -246,7 +246,7 @@ export function Workspace() {
 
         <InstrumentPanels bounds={mainRef} />
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[100] flex flex-col items-center gap-2 px-3 pb-3">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[100] flex flex-col items-center gap-2 px-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:pb-3">
           <Transport />
         </div>
       </main>

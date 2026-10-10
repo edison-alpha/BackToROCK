@@ -49,6 +49,8 @@ function subscribe(onChange: () => void) {
   };
 }
 
-export function useGuest(): Guest | null {
-  return useSyncExternalStore(subscribe, read, () => null);
+// `undefined` means localStorage has not been read yet (server render and the first hydration pass), which is
+// different from `null` (read, nothing saved). Treating the two alike sent saved guests back to /onboarding.
+export function useGuest(): Guest | null | undefined {
+  return useSyncExternalStore<Guest | null | undefined>(subscribe, read, () => undefined);
 }

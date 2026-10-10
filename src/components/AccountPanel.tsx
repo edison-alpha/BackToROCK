@@ -37,7 +37,7 @@ export function useProfile(redirectToOnboarding = false) {
     };
   }, [status, router, redirectToOnboarding]);
 
-  const guestUndecided = !guest || (!guest.instrument && !guest.skipped);
+  const guestUndecided = guest !== undefined && (!guest || (!guest.instrument && !guest.skipped));
   useEffect(() => {
     if (status === "unauthenticated" && redirectToOnboarding && guestUndecided) router.replace("/onboarding");
   }, [status, redirectToOnboarding, guestUndecided, router]);
