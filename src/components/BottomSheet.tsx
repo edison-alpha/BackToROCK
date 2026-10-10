@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useDragControls } from "motion/react";
 import { Icon } from "@iconify/react";
 
@@ -38,13 +39,17 @@ export function BottomSheet({
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  return (
+  // Rendered in a portal on document.body. Transport lives inside a `pointer-events-none` overlay with its own
+  // stacking context; left there, the sheet inherited pointer-events: none (taps and scrolls hit the page behind)
+  // and could not rise above other layers.
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-[150]">
+        <div className="pointer-events-auto fixed inset-0 z-[150]">
           <motion.button
             aria-label="Tutup pengaturan"
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 touch-none bg-black/60"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -89,6 +94,7 @@ export function BottomSheet({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
