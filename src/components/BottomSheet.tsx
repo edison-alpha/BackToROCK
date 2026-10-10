@@ -22,13 +22,21 @@ export function BottomSheet({
   const controls = useDragControls();
   const sheetRef = useRef<HTMLDivElement>(null);
 
+  // The parent re-renders constantly during playback and passes a new onClose each time. Keep the latest one in
+  // a ref so the effect below depends only on `open`; otherwise it re-focuses the sheet several times a second,
+  // which interrupts slider drags and scrolls the page.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
   useEffect(() => {
     if (!open) return;
-    sheetRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    sheetRef.current?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onCloseRef.current();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open]);
 
   return (
     <AnimatePresence>
