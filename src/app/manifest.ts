@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "BackToRock",
     short_name: "BackToRock",
-    description: "Pemutar tablature Guitar Pro untuk latihan gitar, bass, piano, dan drum.",
+    description: "Guitar Pro tablature player for practicing guitar, bass, piano and drums.",
     lang: "id",
     start_url: "/",
     scope: "/",

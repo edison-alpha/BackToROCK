@@ -11,7 +11,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   title: "BackToRock",
-  description: "Pemutar tablature Guitar Pro untuk latihan gitar, bass, piano, dan drum.",
+  description: "Guitar Pro tablature player for practicing guitar, bass, piano and drums.",
   applicationName: "BackToRock",
   appleWebApp: { capable: true, title: "BackToRock", statusBarStyle: "black-translucent" },
   formatDetection: { telephone: false },

@@ -12,7 +12,7 @@ import { INSTRUMENTS, type Instrument } from "@/lib/profile";
 import { cn } from "@/lib/utils";
 
 const INFO: Record<Instrument, { title: string; icon: string }> = {
-  gitar: { title: "Gitar", icon: INSTRUMENT_ICONS.guitar },
+  gitar: { title: "Guitar", icon: INSTRUMENT_ICONS.guitar },
   bass: { title: "Bass", icon: INSTRUMENT_ICONS.bass },
   piano: { title: "Piano", icon: INSTRUMENT_ICONS.piano },
   drum: { title: "Drum", icon: INSTRUMENT_ICONS.drums },
@@ -31,7 +31,7 @@ export default function OnboardingPage() {
     setError(null);
     if (status !== "authenticated") {
       // Guests keep their choice in this browser. A full page load is used instead of router.replace: the choice is
-      // already saved, so there is nothing to wait for, and it cannot get stuck on "Menyimpan...".
+      // already saved, so there is nothing to wait for, and it cannot get stuck on "Saving...".
       saveGuest({ instrument });
       window.location.replace("/");
       return;
@@ -45,7 +45,7 @@ export default function OnboardingPage() {
       if (!res.ok) throw new Error();
       router.replace("/");
     } catch {
-      setError("Gagal menyimpan. Periksa koneksi lalu pilih lagi.");
+      setError("Could not save. Check your connection and pick again.");
       setPicked(null);
     }
   };
@@ -53,7 +53,7 @@ export default function OnboardingPage() {
   if (status === "loading") {
     return (
       <main className="grid min-h-dvh place-items-center bg-background" role="status">
-        <p className="text-muted-foreground">Memuat...</p>
+        <p className="text-muted-foreground">Loading...</p>
       </main>
     );
   }
@@ -65,12 +65,12 @@ export default function OnboardingPage() {
       <div className="m-auto w-full max-w-2xl space-y-12 text-center">
         <header className="space-y-2">
           <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
-            {firstName ? `Halo ${firstName}, instrumen utamamu?` : "Instrumen utamamu?"}
+            {firstName ? `Hi ${firstName}, what's your main instrument?` : "What's your main instrument?"}
           </h1>
-          <p className="text-muted-foreground">Yang paling sering kamu mainkan.</p>
+          <p className="text-muted-foreground">The one you play most often.</p>
         </header>
 
-        <div role="radiogroup" aria-label="Instrumen utama" className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-4">
+        <div role="radiogroup" aria-label="Main instrument" className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-4">
           {INSTRUMENTS.map((i) => {
             const selected = picked === i;
             return (
@@ -107,7 +107,7 @@ export default function OnboardingPage() {
 
         <p role={error ? "alert" : "status"} className="min-h-6 text-sm text-[#ff7b83]">
           {error}
-          {picked && !error && <span className="text-muted-foreground">Menyimpan...</span>}
+          {picked && !error && <span className="text-muted-foreground">Saving...</span>}
         </p>
 
         {status === "unauthenticated" && !picked && (
@@ -116,7 +116,7 @@ export default function OnboardingPage() {
             onClick={() => saveGuest({ skipped: true })}
             className="inline-block rounded-lg px-3 py-2 text-sm text-muted-foreground underline-offset-4 hover:text-white hover:underline"
           >
-            Lewati dulu
+            Skip for now
           </Link>
         )}
       </div>

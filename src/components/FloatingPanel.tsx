@@ -73,7 +73,7 @@ export function FloatingPanel({
         <div
           onPointerDown={(e) => controls.start(e)}
           className="flex h-8 shrink-0 cursor-grab touch-none select-none items-center gap-2 rounded-lg px-2 text-sm font-medium active:cursor-grabbing"
-          title="Tarik untuk memindahkan"
+          title="Drag to move"
         >
           <Icon icon={icon} width={16} />
           {title}
@@ -87,7 +87,7 @@ export function FloatingPanel({
         />
         <button
           onClick={onClose}
-          aria-label={`Tutup panel ${title}`}
+          aria-label={`Close ${title} panel`}
           className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-white/10 hover:text-white"
         >
           <Icon icon="solar:close-circle-linear" width={18} />
@@ -97,8 +97,8 @@ export function FloatingPanel({
       <button
         onPointerDown={startResize}
         onKeyDown={keyResize}
-        aria-label={`Ubah ukuran panel ${title}, gunakan panah kiri dan kanan`}
-        title="Tarik untuk mengubah ukuran"
+        aria-label={`Resize ${title} panel, use the left and right arrow keys`}
+        title="Drag to resize"
         className="absolute -bottom-1 -right-1 flex size-6 cursor-nwse-resize touch-none items-end justify-end rounded-br-xl p-1 text-muted-foreground hover:text-white"
       >
         <Icon icon="solar:round-alt-arrow-right-linear" width={14} className="rotate-45" />

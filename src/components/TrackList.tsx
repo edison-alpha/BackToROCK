@@ -24,7 +24,7 @@ export function TrackList() {
   const selected = usePlayer((s) => s.selected);
 
   if (tracks.length === 0) {
-    return <p className="px-3 text-sm text-muted-foreground">Track akan muncul setelah file dibuka.</p>;
+    return <p className="px-3 text-sm text-muted-foreground">Tracks will appear once a file is open.</p>;
   }
 
   return (

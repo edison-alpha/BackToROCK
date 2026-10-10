@@ -65,10 +65,10 @@ function LoginForm() {
 
         <div className="flex flex-col justify-center gap-6 p-6 md:p-10">
           <div className="space-y-2">
-            <h1 className="text-3xl font-extrabold tracking-tight">Masuk ke BackToRock</h1>
+            <h1 className="text-3xl font-extrabold tracking-tight">Sign in to BackToRock</h1>
             <p className="text-muted-foreground">
-              Masuk dengan Google supaya peran dan instrumenmu tersimpan. Tanpa masuk, kamu tetap bisa membuka file
-              Guitar Pro dan memainkannya.
+              Sign in with Google to keep your instrument saved. Without signing in, you can still open Guitar Pro
+              files and play them.
             </p>
           </div>
 
@@ -79,12 +79,12 @@ function LoginForm() {
               className="flex h-12 w-full items-center justify-center gap-3 rounded-full bg-white font-semibold text-[#1f1f1f] transition-colors hover:bg-[#ececec] disabled:opacity-60"
             >
               <Icon icon="logos:google-icon" width={20} />
-              {busy ? "Mengalihkan ke Google..." : "Masuk dengan Google"}
+              {busy ? "Redirecting to Google..." : "Sign in with Google"}
             </button>
 
             {failed && (
               <p role="alert" className="text-sm text-[#ff7b83]">
-                Gagal masuk dengan Google. Coba lagi, dan pastikan kunci Google OAuth sudah diisi di .env.local.
+                Could not sign in with Google. Try again, and make sure the Google OAuth keys are set in .env.local.
               </p>
             )}
 
@@ -92,7 +92,7 @@ function LoginForm() {
               href="/"
               className="flex h-12 w-full items-center justify-center rounded-full border border-border font-semibold hover:bg-white/5"
             >
-              Lanjut sebagai tamu
+              Continue as guest
             </Link>
           </div>
         </div>

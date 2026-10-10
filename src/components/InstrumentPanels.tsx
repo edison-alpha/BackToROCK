@@ -11,7 +11,7 @@ type PanelKind = "guitar" | "bass" | "piano";
 
 const META: Record<PanelKind, { title: string; icon: string; position: string; prefer: InstrumentKind[] }> = {
   guitar: {
-    title: "Gitar",
+    title: "Guitar",
     icon: INSTRUMENT_ICONS.guitar,
     position: "bottom-40 left-3 md:bottom-[24rem]",
     prefer: ["guitar"],
@@ -64,7 +64,7 @@ function Panel({
       bounds={bounds}
       headerExtra={
         tracks.length > 1 ? (
-          <div className="flex items-center gap-1" role="group" aria-label={`Track untuk panel ${meta.title}`}>
+          <div className="flex items-center gap-1" role="group" aria-label={`Track for the ${meta.title} panel`}>
             {tracks.map((t) => {
               const ok = supports(kind, t);
               const active = t.index === current?.index;
@@ -74,7 +74,7 @@ function Panel({
                   onClick={() => setPicked(t.index)}
                   disabled={!ok}
                   aria-pressed={active}
-                  title={ok ? t.name : `${t.name}: tidak didukung di tampilan ${meta.title}`}
+                  title={ok ? t.name : `${t.name}: not supported in the ${meta.title} view`}
                   className={`h-8 shrink-0 whitespace-nowrap rounded-lg px-3 text-sm disabled:cursor-not-allowed disabled:opacity-35 ${
                     active ? "bg-white/12 text-white" : "text-muted-foreground enabled:hover:text-white"
                   }`}
@@ -103,7 +103,7 @@ function Panel({
         </div>
       ) : (
         <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-          Tidak ada track yang bisa ditampilkan di {meta.title.toLowerCase()} untuk lagu ini.
+          No track in this song can be shown in the {meta.title.toLowerCase()} view.
         </p>
       )}
     </FloatingPanel>

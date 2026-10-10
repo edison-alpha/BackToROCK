@@ -42,7 +42,7 @@ export function Splash() {
           key="splash"
           role="status"
           aria-live="polite"
-          aria-label="Memuat BackToRock"
+          aria-label="Loading BackToRock"
           className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-background"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}

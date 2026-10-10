@@ -35,10 +35,10 @@ export async function POST(request: Request) {
   if (!GOOGLE_LOGIN) return off();
   const session = await auth();
   const email = session?.user?.email;
-  if (!email) return Response.json({ error: "Belum login" }, { status: 401 });
+  if (!email) return Response.json({ error: "Not signed in" }, { status: 401 });
 
   const body: unknown = await request.json().catch(() => null);
-  if (!isProfile(body)) return Response.json({ error: "Data tidak valid" }, { status: 400 });
+  if (!isProfile(body)) return Response.json({ error: "Invalid data" }, { status: 400 });
 
   const value: Stored = { instrument: body.instrument, email };
   (await cookies()).set(COOKIE, JSON.stringify(value), {

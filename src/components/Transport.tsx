@@ -9,7 +9,7 @@ import { BottomSheet } from "./BottomSheet";
 import { usePlayer } from "@/lib/player-store";
 import { formatTime } from "@/lib/music";
 import { cn } from "@/lib/utils";
-import { seek, setLooping, setMasterVolume, setMetronome, setSpeed, setZoom, stop, togglePlay } from "@/lib/engine";
+import { seek, setLooping, setMasterVolume, setMetronome, setSpeed, setZoom, togglePlay } from "@/lib/engine";
 
 const SPEEDS = [0.5, 0.75, 1];
 
@@ -66,7 +66,7 @@ function Options({ stacked }: { stacked: boolean }) {
   );
 
   const speed = (
-    <div className="flex items-center rounded-xl bg-black/30 p-1" role="group" aria-label="Kecepatan">
+    <div className="flex items-center rounded-xl bg-black/30 p-1" role="group" aria-label="Speed">
       {SPEEDS.map((v) => (
         <button
           key={v}
@@ -92,7 +92,7 @@ function Options({ stacked }: { stacked: boolean }) {
         className="shrink-0 text-muted-foreground"
       />
       <Slider
-        aria-label="Volume utama"
+        aria-label="Master volume"
         min={0}
         max={1.5}
         step={0.05}
@@ -104,7 +104,7 @@ function Options({ stacked }: { stacked: boolean }) {
 
   const toggles = (
     <>
-      <IconBtn icon="solar:repeat-linear" label="Ulang lagu" on={s.looping} onClick={() => setLooping(!s.looping)} />
+      <IconBtn icon="solar:repeat-linear" label="Loop song" on={s.looping} onClick={() => setLooping(!s.looping)} />
       <IconBtn icon="mdi:metronome" label="Metronom" on={s.metronome} onClick={() => setMetronome(!s.metronome)} />
     </>
   );
@@ -113,12 +113,12 @@ function Options({ stacked }: { stacked: boolean }) {
     <>
       <IconBtn
         icon="solar:magnifer-zoom-out-linear"
-        label="Perkecil partitur"
+        label="Zoom out score"
         onClick={() => setZoom(Math.max(0.6, +(s.zoom - 0.1).toFixed(1)))}
       />
       <IconBtn
         icon="solar:magnifer-zoom-in-linear"
-        label="Perbesar partitur"
+        label="Zoom in score"
         onClick={() => setZoom(Math.min(1.8, +(s.zoom + 0.1).toFixed(1)))}
       />
     </>
@@ -137,15 +137,15 @@ function Options({ stacked }: { stacked: boolean }) {
 
   return (
     <div className="divide-y divide-white/8">
-      <Row label="Kecepatan">{speed}</Row>
-      <Row label="Volume utama">{volume}</Row>
-      <Row label="Latihan">
+      <Row label="Speed">{speed}</Row>
+      <Row label="Master volume">{volume}</Row>
+      <Row label="Practice">
         <div className="flex items-center gap-1">
           {toggles}
-          <span className="px-2 text-sm text-muted-foreground">Ulang lagu dan metronom</span>
+          <span className="px-2 text-sm text-muted-foreground">Loop and metronome</span>
         </div>
       </Row>
-      <Row label={`Ukuran partitur (${Math.round(s.zoom * 100)}%)`}>
+      <Row label={`Score size (${Math.round(s.zoom * 100)}%)`}>
         <div className="flex items-center gap-1">{zoom}</div>
       </Row>
     </div>
@@ -171,7 +171,7 @@ export function Transport() {
     <button
       onClick={togglePlay}
       disabled={disabled}
-      aria-label={s.playing ? "Jeda" : "Putar"}
+      aria-label={s.playing ? "Pause" : "Play"}
       className={`flex ${size} shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-[#ee3340] disabled:opacity-40`}
     >
       <Icon icon={s.playing ? "solar:pause-bold" : "solar:play-bold"} width={22} />
@@ -190,16 +190,16 @@ export function Transport() {
         <div className="flex items-center gap-3">
           {playButton("size-11")}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{name ?? "Belum ada file"}</p>
-            <p className="text-xs text-white/70">{s.playing ? "Sedang diputar" : "Dijeda"}</p>
+            <p className="truncate text-sm font-semibold">{name ?? "No file yet"}</p>
+            <p className="text-xs text-white/70">{s.playing ? "Playing" : "Paused"}</p>
           </div>
-          <IconBtn icon="solar:alt-arrow-up-linear" label="Perluas pemutar" onClick={() => setCollapsed(false)} />
+          <IconBtn icon="solar:alt-arrow-up-linear" label="Expand player" onClick={() => setCollapsed(false)} />
         </div>
         {/* A real slider with a full-size touch area, kept in the layout (not pinned to the edge) so it can be dragged. */}
         <div className="flex items-center gap-3 px-1">
           <span className="w-9 shrink-0 text-right text-xs tabular-nums text-white/80">{formatTime(s.time)}</span>
           <Slider
-            aria-label="Posisi lagu"
+            aria-label="Song position"
             min={0}
             max={Math.max(s.end, 1)}
             value={[Math.min(s.time, s.end)]}
@@ -220,11 +220,10 @@ export function Transport() {
         style={{ borderRadius: 9999 }}
         className="glass pointer-events-auto flex w-full max-w-5xl items-center gap-2 px-3 py-2 md:gap-3"
       >
-        <IconBtn icon="solar:stop-bold" label="Stop" onClick={stop} />
         {playButton("size-12")}
         <span className="w-10 shrink-0 text-right text-sm tabular-nums text-white/80">{formatTime(s.time)}</span>
         <Slider
-          aria-label="Posisi lagu"
+          aria-label="Song position"
           min={0}
           max={Math.max(s.end, 1)}
           value={[Math.min(s.time, s.end)]}
@@ -238,12 +237,12 @@ export function Transport() {
           <Options stacked={false} />
         </div>
         <div className="md:hidden">
-          <ActionBtn icon="solar:settings-linear" label="Pengaturan pemutar" onClick={() => setSheet(true)} />
+          <ActionBtn icon="solar:settings-linear" label="Player settings" onClick={() => setSheet(true)} />
         </div>
-        <IconBtn icon="solar:alt-arrow-down-linear" label="Ciutkan pemutar" onClick={() => setCollapsed(true)} />
+        <IconBtn icon="solar:alt-arrow-down-linear" label="Collapse player" onClick={() => setCollapsed(true)} />
       </motion.div>
 
-      <BottomSheet open={sheet} onClose={() => setSheet(false)} title="Pengaturan pemutar">
+      <BottomSheet open={sheet} onClose={() => setSheet(false)} title="Player settings">
         <Options stacked />
       </BottomSheet>
     </>

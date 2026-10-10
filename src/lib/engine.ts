@@ -19,7 +19,7 @@ function loadScript(): Promise<AlphaTabNs> {
     const el = document.createElement("script");
     el.src = `${BASE}/alphaTab.min.js`;
     el.onload = () => (window.alphaTab ? resolve(window.alphaTab) : reject(new Error("alphaTab tidak termuat")));
-    el.onerror = () => reject(new Error("Gagal memuat alphaTab"));
+    el.onerror = () => reject(new Error("Could not load alphaTab"));
     document.head.appendChild(el);
   });
   return scriptPromise;
@@ -29,7 +29,7 @@ const set = usePlayer.getState().set;
 
 const KIND_LABEL: Record<InstrumentKind, string> = {
   piano: "Piano",
-  guitar: "Gitar",
+  guitar: "Guitar",
   bass: "Bass",
   drums: "Drum",
   other: "Track",
@@ -153,7 +153,7 @@ export async function initEngine(container: HTMLElement, viewport: HTMLElement) 
     set({ activeByTrack: byTrack });
   });
   api.error.on((e) => {
-    set({ status: "error", error: e.message || "Terjadi kesalahan saat membaca file" });
+    set({ status: "error", error: e.message || "Something went wrong while reading the file" });
   });
   set({ engineReady: true });
 }
@@ -164,7 +164,7 @@ export function loadFile(name: string, data: ArrayBuffer) {
   try {
     api.load(new Uint8Array(data));
   } catch (e) {
-    set({ status: "error", error: e instanceof Error ? e.message : "Format file tidak didukung" });
+    set({ status: "error", error: e instanceof Error ? e.message : "Unsupported file format" });
   }
 }
 

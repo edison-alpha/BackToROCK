@@ -11,7 +11,7 @@ import { UserAvatar } from "./UserAvatar";
 import { useGuest } from "@/lib/guest";
 import { isProfile, type Instrument, type Profile } from "@/lib/profile";
 
-const INSTRUMENT_LABEL: Record<Instrument, string> = { gitar: "Gitar", bass: "Bass", piano: "Piano", drum: "Drum" };
+const INSTRUMENT_LABEL: Record<Instrument, string> = { gitar: "Guitar", bass: "Bass", piano: "Piano", drum: "Drum" };
 
 // Works for both kinds of user. Signed-in users keep their instrument in a cookie (via /api/profile), guests in
 // localStorage. Someone who has not chosen yet is sent to /onboarding once.
@@ -55,13 +55,13 @@ export function AccountPanel() {
 
   const authed = status === "authenticated";
   const user = data?.user;
-  const subtitle = profile ? INSTRUMENT_LABEL[profile.instrument] : authed ? "Mengatur profil..." : "Pilih instrumen";
+  const subtitle = profile ? INSTRUMENT_LABEL[profile.instrument] : authed ? "Setting up profile..." : "Choose instrument";
 
   return (
     <div className="flex items-center gap-1 rounded-2xl bg-white/[0.04] p-2">
       <Link
         href="/onboarding"
-        title="Ubah instrumen"
+        title="Change instrument"
         className="flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1 hover:bg-white/5"
       >
         {authed && user?.image ? (
@@ -75,7 +75,7 @@ export function AccountPanel() {
         )}
         <span className="min-w-0">
           <span className="block truncate text-sm font-semibold">
-            {authed ? (user?.name ?? user?.email) : "Tamu"}
+            {authed ? (user?.name ?? user?.email) : "Guest"}
           </span>
           <span className="block truncate text-xs text-muted-foreground">{subtitle}</span>
         </span>
@@ -84,8 +84,8 @@ export function AccountPanel() {
       {authed ? (
         <button
           onClick={() => signOut({ callbackUrl: "/" })}
-          aria-label="Keluar"
-          title="Keluar"
+          aria-label="Sign out"
+          title="Sign out"
           className="flex size-11 shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:bg-white/10 hover:text-white"
         >
           <Icon icon="solar:logout-2-linear" width={20} />
@@ -93,8 +93,8 @@ export function AccountPanel() {
       ) : GOOGLE_LOGIN ? (
         <Link
           href="/login"
-          aria-label="Masuk dengan Google"
-          title="Masuk dengan Google"
+          aria-label="Sign in with Google"
+          title="Sign in with Google"
           className="flex size-11 shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:bg-white/10 hover:text-white"
         >
           <Icon icon="solar:login-2-linear" width={20} />

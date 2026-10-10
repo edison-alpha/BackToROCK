@@ -42,8 +42,8 @@ export function SidebarBody({
           {onCollapse && (
             <button
               onClick={onCollapse}
-              aria-label="Ciutkan sidebar"
-              title="Ciutkan sidebar"
+              aria-label="Collapse sidebar"
+              title="Collapse sidebar"
               className="absolute right-0 top-0 flex size-11 items-center justify-center rounded-xl text-muted-foreground hover:bg-white/10 hover:text-white"
             >
               <Icon icon="solar:sidebar-minimalistic-linear" width={22} />
@@ -56,10 +56,10 @@ export function SidebarBody({
         onClick={onOpenFile}
         className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-primary font-semibold text-white transition-colors hover:bg-[#ee3340]"
       >
-        <Icon icon="solar:folder-open-linear" width={20} /> Buka file
+        <Icon icon="solar:folder-open-linear" width={20} /> Open file
       </button>
 
-      <div className="flex shrink-0 rounded-full bg-black/30 p-1" role="tablist" aria-label="Isi sidebar">
+      <div className="flex shrink-0 rounded-full bg-black/30 p-1" role="tablist" aria-label="Sidebar sections">
         {TABS.map((t) => (
           <button
             key={t.id}

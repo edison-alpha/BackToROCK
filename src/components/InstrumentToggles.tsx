@@ -32,7 +32,7 @@ export function InstrumentToggles() {
   ];
 
   return (
-    <div className="flex items-center gap-1" role="group" aria-label="Panel instrumen">
+    <div className="flex items-center gap-1" role="group" aria-label="Instrument panels">
       {items.map((it) => (
         <button
           key={it.label}

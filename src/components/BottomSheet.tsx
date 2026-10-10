@@ -48,7 +48,7 @@ export function BottomSheet({
       {open && (
         <div className="pointer-events-auto fixed inset-0 z-[150]">
           <motion.button
-            aria-label="Tutup pengaturan"
+            aria-label="Close settings"
             className="absolute inset-0 touch-none bg-black/60"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -83,7 +83,7 @@ export function BottomSheet({
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={onClose}
-                  aria-label="Tutup pengaturan"
+                  aria-label="Close settings"
                   className="flex size-11 items-center justify-center rounded-full text-white/80 hover:bg-white/10"
                 >
                   <Icon icon="solar:close-circle-linear" width={22} />

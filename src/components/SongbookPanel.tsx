@@ -31,7 +31,7 @@ export function SongbookPanel({ onPick }: { onPick: () => void }) {
       loadFile(song.name, data);
       onPick();
     } catch {
-      setError(`Tidak bisa membuka ${label(song.name)}. Coba buka file aslinya lagi.`);
+      setError(`Could not open ${label(song.name)}. Try opening the original file again.`);
     }
   };
 
@@ -41,12 +41,12 @@ export function SongbookPanel({ onPick }: { onPick: () => void }) {
       await deleteSong(song.id);
       await refreshSongs();
     } catch {
-      setError(`Gagal menghapus ${label(song.name)}.`);
+      setError(`Could not delete ${label(song.name)}.`);
     }
   };
 
   if (state === "loading") {
-    return <p className="px-3 text-sm text-muted-foreground">Memuat songbook...</p>;
+    return <p className="px-3 text-sm text-muted-foreground">Loading songbook...</p>;
   }
   if (state === "error") {
     return (
@@ -61,7 +61,7 @@ export function SongbookPanel({ onPick }: { onPick: () => void }) {
         <Icon icon="solar:music-library-2-linear" width={36} className="text-muted-foreground" />
         <p className="font-medium">Songbook masih kosong</p>
         <p className="text-sm text-muted-foreground">
-          Setiap file yang kamu buka tersimpan di sini dan hanya ada di browser ini.
+          Every file you open is saved here and stays in this browser only.
         </p>
       </div>
     );
@@ -101,8 +101,8 @@ export function SongbookPanel({ onPick }: { onPick: () => void }) {
                 </button>
                 <button
                   onClick={() => remove(song)}
-                  aria-label={`Hapus ${label(song.name)} dari songbook`}
-                  title="Hapus dari songbook"
+                  aria-label={`Delete ${label(song.name)} from songbook`}
+                  title="Delete from songbook"
                   className="flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-white/10 hover:text-white"
                 >
                   <Icon icon="solar:trash-bin-minimalistic-linear" width={20} />

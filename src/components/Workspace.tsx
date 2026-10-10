@@ -119,7 +119,7 @@ export function Workspace() {
         type="file"
         accept={ACCEPT}
         className="sr-only"
-        aria-label="Pilih file Guitar Pro"
+        aria-label="Choose a Guitar Pro file"
         onChange={(e) => {
           openFile(e.target.files?.[0]);
           e.target.value = "";
@@ -151,21 +151,21 @@ export function Workspace() {
             {/* Menu button: opens the bottom sheet on phones, shows or hides the sidebar on desktop. */}
             <button
               onClick={() => (compact ? setSheetOpen(true) : setDesktopOpen((v) => !v))}
-              aria-label={compact ? "Buka menu" : desktopOpen ? "Ciutkan sidebar" : "Buka sidebar"}
+              aria-label={compact ? "Open menu" : desktopOpen ? "Collapse sidebar" : "Open sidebar"}
               aria-expanded={compact ? sheetOpen : desktopOpen}
               className="flex size-10 shrink-0 items-center justify-center rounded-full text-white/80 hover:bg-white/10"
             >
               <Icon icon={compact ? "solar:hamburger-menu-linear" : "solar:sidebar-minimalistic-linear"} width={22} />
             </button>
             <h1 className="min-w-0 truncate pl-1 text-base font-semibold md:pl-2">
-              {title || fileName || "Belum ada file"}
+              {title || fileName || "No file yet"}
             </h1>
           </div>
           {(hasTracks || (status === "ready" && !soundReady)) && (
             <div className="glass pointer-events-auto flex h-12 shrink-0 items-center gap-2 rounded-full px-2">
               {status === "ready" && !soundReady && (
                 <span className="hidden pl-2 text-sm text-white/80 sm:inline">
-                  Memuat suara {Math.round(soundProgress * 100)}%
+                  Loading sounds {Math.round(soundProgress * 100)}%
                 </span>
               )}
               <InstrumentToggles />
@@ -187,15 +187,15 @@ export function Workspace() {
           {status === "empty" && (
             <div className="mx-auto flex h-full max-w-md flex-col items-center justify-center gap-4 text-center">
               <Icon icon="solar:music-library-2-linear" width={48} className="text-muted-foreground" />
-              <h2 className="text-xl font-semibold">Buka file Guitar Pro</h2>
+              <h2 className="text-xl font-semibold">Open a Guitar Pro file</h2>
               <p className="text-muted-foreground">
-                Tarik file ke sini atau pilih dari komputer. Format: .gp, .gp5, .gpx, dan MusicXML.
+                Drag a file here or choose one from your device. Formats: .gp, .gp5, .gpx and MusicXML.
               </p>
               <button
                 onClick={() => inputRef.current?.click()}
                 className="flex h-11 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-white hover:bg-[#ee3340]"
               >
-                <Icon icon="solar:folder-open-linear" width={20} /> Pilih file
+                <Icon icon="solar:folder-open-linear" width={20} /> Choose file
               </button>
             </div>
           )}
@@ -213,23 +213,23 @@ export function Workspace() {
                 priority
                 className="size-52 animate-pulse mix-blend-screen md:size-64"
               />
-              <p className="max-w-[80%] truncate">Membaca {fileName}</p>
+              <p className="max-w-[80%] truncate">Reading {fileName}</p>
             </div>
           )}
 
           {status === "error" && (
             <div className="mx-auto flex h-full max-w-md flex-col items-center justify-center gap-3 text-center" role="alert">
               <Icon icon="solar:danger-circle-linear" width={44} className="text-destructive" />
-              <h2 className="text-xl font-semibold">File tidak bisa dibuka</h2>
+              <h2 className="text-xl font-semibold">The file could not be opened</h2>
               <p className="text-muted-foreground">{error}</p>
               <p className="text-sm text-muted-foreground">
-                Jika file dari Guitar Pro 8, coba simpan ulang sebagai .gp5 dari aplikasinya, lalu buka lagi.
+                If the file is from Guitar Pro 8, try re-saving it as .gp5 from the app, then open it again.
               </p>
               <button
                 onClick={() => inputRef.current?.click()}
                 className="mt-1 flex h-11 items-center gap-2 rounded-full bg-secondary px-6 font-semibold hover:bg-white/15"
               >
-                Pilih file lain
+                Choose another file
               </button>
             </div>
           )}
@@ -237,7 +237,7 @@ export function Workspace() {
 
         {dragging && (
           <div className="absolute inset-2 z-20 flex items-center justify-center rounded-xl border-2 border-dashed border-primary bg-black/60 text-lg font-semibold">
-            Lepas file di sini
+            Drop the file here
           </div>
         )}
 
@@ -246,7 +246,7 @@ export function Workspace() {
 
         <InstrumentPanels bounds={mainRef} />
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[100] flex flex-col items-center gap-2 px-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:pb-3">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[100] flex flex-col items-center gap-2 px-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:pointer-fine:pb-3">
           <Transport />
         </div>
       </main>
