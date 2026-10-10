@@ -158,14 +158,25 @@ export async function initEngine(container: HTMLElement, viewport: HTMLElement) 
   set({ engineReady: true });
 }
 
+let loadId = 0;
+
 export function loadFile(name: string, data: ArrayBuffer) {
   if (!api) return;
+  const id = ++loadId;
   set({ status: "loading", error: null, fileName: name, activeByTrack: {} });
-  try {
-    api.load(new Uint8Array(data));
-  } catch (e) {
-    set({ status: "error", error: e instanceof Error ? e.message : "Unsupported file format" });
-  }
+  // The score container is display:none until React has re-rendered with status "loading". Loading right now would
+  // make alphaTab lay the score out at zero width, and the first track would stay blank until another render.
+  // Wait two frames so the container is visible and measured first.
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      if (!api || id !== loadId) return;
+      try {
+        api.load(new Uint8Array(data));
+      } catch (e) {
+        set({ status: "error", error: e instanceof Error ? e.message : "Unsupported file format" });
+      }
+    }),
+  );
 }
 
 export function togglePlay() {

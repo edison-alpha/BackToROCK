@@ -49,7 +49,7 @@ export function TrackList() {
             </button>
             <button
               onClick={() => setMute(t.index, !t.muted)}
-              aria-label={t.muted ? `Bunyikan ${t.name}` : `Bisukan ${t.name}`}
+              aria-label={t.muted ? `Unmute ${t.name}` : `Mute ${t.name}`}
               aria-pressed={t.muted}
               className={cn(
                 "flex size-11 items-center justify-center rounded-lg hover:bg-white/10",
