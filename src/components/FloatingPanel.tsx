@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from "react";
-import { motion, useDragControls } from "motion/react";
+import { useEffect, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from "react";
+import { motion, useDragControls, useMotionValue } from "motion/react";
 import { Icon } from "@iconify/react";
 
 // Shared across panels so the one you touched last sits on top.
@@ -32,6 +32,18 @@ export function FloatingPanel({
   const controls = useDragControls();
   const [z, setZ] = useState(() => ++topZ);
   const [width, setWidth] = useState(defaultWidth);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  // After a rotation or resize the old drag offset can leave the panel outside the screen, out of reach. Go back home.
+  useEffect(() => {
+    const home = () => {
+      x.set(0);
+      y.set(0);
+    };
+    window.addEventListener("resize", home);
+    return () => window.removeEventListener("resize", home);
+  }, [x, y]);
 
   const maxWidth = () => (bounds.current?.clientWidth ?? 1400) - 24;
   const clamp = (w: number) => Math.min(Math.max(w, minWidth), maxWidth());
@@ -66,7 +78,7 @@ export function FloatingPanel({
       dragConstraints={bounds}
       dragElastic={0}
       onPointerDown={() => setZ(++topZ)}
-      style={{ zIndex: z, width, maxWidth: "calc(100% - 1.5rem)" }}
+      style={{ x, y, zIndex: z, width, maxWidth: "calc(100% - 1.5rem)" }}
       className={`pointer-events-auto absolute rounded-xl border border-white/10 bg-[#202020] p-1.5 shadow-[0_10px_28px_rgba(0,0,0,0.5)] ${className ?? ""}`}
     >
       <div className="mb-1 flex items-center gap-1">

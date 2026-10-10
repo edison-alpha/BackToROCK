@@ -6,6 +6,7 @@ import { Fretboard } from "./Fretboard";
 import { PianoKeyboard } from "./PianoKeyboard";
 import { usePlayer, type InstrumentKind, type TrackInfo } from "@/lib/player-store";
 import { INSTRUMENT_ICONS } from "@/lib/instrument-icons";
+import { useCompact } from "@/lib/use-compact";
 
 type PanelKind = "guitar" | "bass" | "piano";
 
@@ -13,19 +14,19 @@ const META: Record<PanelKind, { title: string; icon: string; position: string; p
   guitar: {
     title: "Guitar",
     icon: INSTRUMENT_ICONS.guitar,
-    position: "bottom-40 left-3 md:bottom-[24rem]",
+    position: "md:bottom-[24rem]",
     prefer: ["guitar"],
   },
   bass: {
     title: "Bass",
     icon: INSTRUMENT_ICONS.bass,
-    position: "bottom-40 left-3 md:bottom-[17rem]",
+    position: "md:bottom-[17rem]",
     prefer: ["bass"],
   },
   piano: {
     title: "Piano",
     icon: INSTRUMENT_ICONS.piano,
-    position: "bottom-40 left-3 md:bottom-28",
+    position: "md:bottom-28",
     prefer: ["piano", "other"],
   },
 };
@@ -49,6 +50,7 @@ function Panel({
 }) {
   const tracks = usePlayer((s) => s.tracks);
   const [picked, setPicked] = useState<number | null>(null);
+  const compact = useCompact();
   if (!open) return null;
 
   const meta = META[kind];
@@ -88,7 +90,9 @@ function Panel({
       }
       onClose={onClose}
       defaultWidth={kind === "piano" ? 880 : 760}
-      className={meta.position}
+      // Phones (portrait or rotated) sit the panel right above the transport. The md: offsets are for the stacked
+      // layout on tablets and desktops; a rotated phone is wide enough to match md: but too short for them.
+      className={compact ? "bottom-24 left-3" : `bottom-40 left-3 ${meta.position}`}
     >
       {current ? (
         /* On a phone the board keeps a readable size and scrolls sideways; on desktop it scales to the panel width. */
