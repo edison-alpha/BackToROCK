@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
-import { signOut, useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
+import { useAuth } from "@/lib/use-auth";
+import { GOOGLE_LOGIN } from "@/lib/features";
 import { UserAvatar } from "./UserAvatar";
 import { useGuest } from "@/lib/guest";
 import { isProfile, type Instrument, type Profile } from "@/lib/profile";
@@ -15,7 +17,7 @@ const INSTRUMENT_LABEL: Record<Instrument, string> = { gitar: "Gitar", bass: "Ba
 // localStorage. Someone who has not chosen yet is sent to /onboarding once.
 export function useProfile(redirectToOnboarding = false) {
   const router = useRouter();
-  const { status } = useSession();
+  const { status } = useAuth();
   const guest = useGuest();
   const [account, setAccount] = useState<Profile | null>(null);
 
@@ -45,7 +47,7 @@ export function useProfile(redirectToOnboarding = false) {
 }
 
 export function AccountPanel() {
-  const { data, status } = useSession();
+  const { data, status } = useAuth();
   const guest = useGuest();
   const profile = useProfile();
 
@@ -88,7 +90,7 @@ export function AccountPanel() {
         >
           <Icon icon="solar:logout-2-linear" width={20} />
         </button>
-      ) : (
+      ) : GOOGLE_LOGIN ? (
         <Link
           href="/login"
           aria-label="Masuk dengan Google"
@@ -97,7 +99,7 @@ export function AccountPanel() {
         >
           <Icon icon="solar:login-2-linear" width={20} />
         </Link>
-      )}
+      ) : null}
     </div>
   );
 }

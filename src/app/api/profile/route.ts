@@ -1,7 +1,10 @@
 import { cookies } from "next/headers";
 import { auth } from "@/auth";
+import { GOOGLE_LOGIN } from "@/lib/features";
 import { isProfile, type Profile } from "@/lib/profile";
 
+// Closed while Google login is switched off (src/lib/features.ts).
+const off = () => new Response("Not found", { status: 404 });
 const COOKIE = "btr_profile";
 const YEAR = 60 * 60 * 24 * 365;
 
@@ -21,6 +24,7 @@ async function readStored(email: string): Promise<Profile | null> {
 }
 
 export async function GET() {
+  if (!GOOGLE_LOGIN) return off();
   const session = await auth();
   const email = session?.user?.email;
   if (!email) return Response.json({ profile: null }, { status: 401 });
@@ -28,6 +32,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!GOOGLE_LOGIN) return off();
   const session = await auth();
   const email = session?.user?.email;
   if (!email) return Response.json({ error: "Belum login" }, { status: 401 });
@@ -47,6 +52,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE() {
+  if (!GOOGLE_LOGIN) return off();
   (await cookies()).delete(COOKIE);
   return Response.json({ ok: true });
 }

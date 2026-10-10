@@ -5,9 +5,23 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
+import { GOOGLE_LOGIN } from "@/lib/features";
 import { signIn, useSession } from "next-auth/react";
 
+// With Google login switched off (see src/lib/features.ts) this page just sends people to the player.
 export default function LoginPage() {
+  return GOOGLE_LOGIN ? <LoginForm /> : <GoHome />;
+}
+
+function GoHome() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/");
+  }, [router]);
+  return null;
+}
+
+function LoginForm() {
   const router = useRouter();
   const { status } = useSession();
   const [busy, setBusy] = useState(false);

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Icon } from "@iconify/react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/lib/use-auth";
 import { saveGuest } from "@/lib/guest";
 import { INSTRUMENT_ICONS } from "@/lib/instrument-icons";
 import { INSTRUMENTS, type Instrument } from "@/lib/profile";
@@ -20,7 +20,7 @@ const INFO: Record<Instrument, { title: string; icon: string }> = {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { status, data } = useSession();
+  const { status, data } = useAuth();
   const [picked, setPicked] = useState<Instrument | null>(null);
   const [error, setError] = useState<string | null>(null);
 
