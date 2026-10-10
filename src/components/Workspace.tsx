@@ -10,6 +10,7 @@ import { SidebarBody } from "./Sidebar";
 import { Transport } from "./Transport";
 import { InstrumentPanels } from "./InstrumentPanels";
 import { InstrumentToggles } from "./InstrumentToggles";
+import { RecentSongs } from "./RecentSongs";
 import { usePlayer } from "@/lib/player-store";
 import { destroyEngine, initEngine, loadFile, togglePlay } from "@/lib/engine";
 import { refreshSongs, saveSong } from "@/lib/songbook";
@@ -185,7 +186,7 @@ export function Workspace() {
           </div>
 
           {status === "empty" && (
-            <div className="mx-auto flex h-full max-w-md flex-col items-center justify-center gap-4 text-center">
+            <div className="mx-auto flex min-h-full max-w-md flex-col items-center justify-center gap-4 text-center">
               <Icon icon="solar:music-library-2-linear" width={48} className="text-muted-foreground" />
               <h2 className="text-xl font-semibold">Open a Guitar Pro file</h2>
               <p className="text-muted-foreground">
@@ -197,6 +198,7 @@ export function Workspace() {
               >
                 <Icon icon="solar:folder-open-linear" width={20} /> Choose file
               </button>
+              <RecentSongs />
             </div>
           )}
 

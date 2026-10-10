@@ -3,19 +3,10 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
 import { usePlayer } from "@/lib/player-store";
-import { deleteSong, getSongData, refreshSongs, type SongMeta } from "@/lib/songbook";
-import { loadFile } from "@/lib/engine";
+import { deleteSong, openSong, refreshSongs, songLabel as label, songSize as size, type SongMeta } from "@/lib/songbook";
 import { cn } from "@/lib/utils";
 
 const DATE = new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short" });
-
-function label(name: string) {
-  return name.replace(/\.[^.]+$/, "");
-}
-
-function size(bytes: number) {
-  return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
 
 export function SongbookPanel({ onPick }: { onPick: () => void }) {
   const songs = usePlayer((s) => s.songs);
@@ -26,9 +17,7 @@ export function SongbookPanel({ onPick }: { onPick: () => void }) {
   const open = async (song: SongMeta) => {
     setError(null);
     try {
-      const data = await getSongData(song.id);
-      if (!data) throw new Error();
-      loadFile(song.name, data);
+      await openSong(song);
       onPick();
     } catch {
       setError(`Could not open ${label(song.name)}. Try opening the original file again.`);

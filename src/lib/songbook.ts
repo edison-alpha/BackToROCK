@@ -1,4 +1,5 @@
 import { usePlayer } from "./player-store";
+import { loadFile } from "./engine";
 
 export type SongMeta = { id: string; name: string; size: number; addedAt: number };
 
@@ -97,4 +98,19 @@ export async function refreshSongs() {
   } catch {
     set({ songsState: "error" });
   }
+}
+
+export function songLabel(name: string) {
+  return name.replace(/.[^.]+$/, "");
+}
+
+export function songSize(bytes: number) {
+  return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+// Throws when the stored bytes are gone, so callers can show their own message.
+export async function openSong(song: SongMeta) {
+  const data = await getSongData(song.id);
+  if (!data) throw new Error("Missing song data");
+  loadFile(song.name, data);
 }
