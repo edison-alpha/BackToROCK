@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import { useShallow } from "zustand/react/shallow";
 import { usePlayer } from "@/lib/player-store";
 import { INSTRUMENT_ICONS } from "@/lib/instrument-icons";
+import { INSTRUMENTS } from "@/lib/instruments";
 import { cn } from "@/lib/utils";
 
 export function InstrumentToggles() {
@@ -13,22 +14,36 @@ export function InstrumentToggles() {
       guitarOpen: st.guitarOpen,
       bassOpen: st.bassOpen,
       pianoOpen: st.pianoOpen,
+      drumMixerOpen: st.drumMixerOpen,
+      instMixerOpen: st.instMixerOpen,
+      hasSampled: INSTRUMENTS.some((i) => st.tracks.some((t) => !t.percussion && i.programs.includes(t.program))),
+      hasDrums: st.drumKitOn && st.tracks.some((t) => t.percussion),
       set: st.set,
     })),
   );
   if (!s.hasTracks) return null;
 
   // On a phone only one panel fits above the transport, so opening one closes the others.
-  const toggle = (key: "guitarOpen" | "bassOpen" | "pianoOpen") => {
+  const toggle = (key: "guitarOpen" | "bassOpen" | "pianoOpen" | "drumMixerOpen" | "instMixerOpen") => {
     const open = !s[key];
     const phone = window.matchMedia("(max-width: 767px)").matches;
-    s.set(phone ? { guitarOpen: false, bassOpen: false, pianoOpen: false, [key]: open } : { [key]: open });
+    s.set(
+      phone
+        ? { guitarOpen: false, bassOpen: false, pianoOpen: false, drumMixerOpen: false, instMixerOpen: false, [key]: open }
+        : { [key]: open },
+    );
   };
 
   const items = [
     { icon: INSTRUMENT_ICONS.guitar, label: "Panel gitar", on: s.guitarOpen, toggle: () => toggle("guitarOpen") },
     { icon: INSTRUMENT_ICONS.bass, label: "Panel bass", on: s.bassOpen, toggle: () => toggle("bassOpen") },
     { icon: INSTRUMENT_ICONS.piano, label: "Panel piano", on: s.pianoOpen, toggle: () => toggle("pianoOpen") },
+    ...(s.hasDrums
+      ? [{ icon: INSTRUMENT_ICONS.drums, label: "Panel drum", on: s.drumMixerOpen, toggle: () => toggle("drumMixerOpen") }]
+      : []),
+    ...(s.hasSampled
+      ? [{ icon: "solar:tuning-2-linear", label: "Panel mixer", on: s.instMixerOpen, toggle: () => toggle("instMixerOpen") }]
+      : []),
   ];
 
   return (

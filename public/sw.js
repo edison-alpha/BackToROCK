@@ -1,7 +1,7 @@
 // BackToRock service worker: lets the app install and open offline once it has been loaded.
 // Pages are network-first (fresh when online, cached when offline). Big static files (score engine, soundfont,
 // fonts, images) are cache-first, since their URLs do not change. API and sign-in calls are never cached.
-const VERSION = "v1";
+const VERSION = "v2"; // bumped so installed copies pick up the drum kit files
 const PAGES = `btr-pages-${VERSION}`;
 const ASSETS = `btr-assets-${VERSION}`;
 const PRECACHE = ["/", "/login", "/onboarding", "/icons/icon-192.png"];
@@ -28,8 +28,10 @@ const isStatic = (url) =>
   url.pathname.startsWith("/_next/static/") ||
   url.pathname.startsWith("/_next/image") ||
   url.pathname.startsWith("/alphatab/") ||
+  url.pathname.startsWith("/kits/") ||
+  url.pathname.startsWith("/ALL%20MICS/") ||
   url.pathname.startsWith("/icons/") ||
-  /\.(png|jpg|jpeg|svg|webp|woff2?|sf2|sf3)$/.test(url.pathname);
+  /\.(png|jpg|jpeg|svg|webp|woff2?|sf2|sf3|m4a)$/.test(url.pathname);
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;

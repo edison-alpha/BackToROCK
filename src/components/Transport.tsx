@@ -199,9 +199,10 @@ export function Transport() {
     })),
   );
   const name = usePlayer((st) => st.title || st.fileName);
+  const drumsLoading = usePlayer((st) => st.drumsLoading);
   const [collapsed, setCollapsed] = useState(false);
   const [sheet, setSheet] = useState(false);
-  const disabled = s.status !== "ready" || !s.soundReady;
+  const disabled = s.status !== "ready" || !s.soundReady || drumsLoading;
   const [exportOpen, setExportOpen] = useState(false);
   const [fxOpen, setFxOpen] = useState(false);
 

@@ -1,52 +1,17 @@
 "use client";
 
-import { Slider } from "@/components/ui/slider";
+import Link from "next/link";
 import { BottomSheet } from "./BottomSheet";
+import { Control, db, percent } from "./FxControl";
 import { usePlayer } from "@/lib/player-store";
 import { FX_DEFAULT, FX_PRESETS, type FxSettings } from "@/lib/fx";
-import { DRUM_PIECES } from "@/lib/drums";
-import { resetDrums, setDrumLevel, setEffects } from "@/lib/engine";
+import { setDrumKit, setDrumSync, setDrumVariant, setEffects } from "@/lib/engine";
+import { KIT_VARIANTS } from "@/lib/drums";
 import { cn } from "@/lib/utils";
 
-function Control({
-  label,
-  value,
-  display,
-  min,
-  max,
-  step,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  display: string;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-1 py-2">
-      <div className="flex items-baseline justify-between text-sm">
-        <span>{label}</span>
-        <span className="tabular-nums text-muted-foreground">{display}</span>
-      </div>
-      <Slider
-        aria-label={label}
-        min={min}
-        max={max}
-        step={step}
-        value={[value]}
-        onValueChange={(v) => onChange(Array.isArray(v) ? v[0] : v)}
-      />
-    </div>
-  );
-}
-
-const db = (v: number) => `${v > 0 ? "+" : ""}${v} dB`;
-const percent = (v: number) => `${Math.round(v * 100)}%`;
-const same = (a: FxSettings, b: FxSettings) => (Object.keys(a) as (keyof FxSettings)[]).every((k) => a[k] === b[k]);
-
+// Slider steps like 0.2 produce values such as 1.2000000000000002, so compare with a tolerance.
+const same = (a: FxSettings, b: FxSettings) =>
+  (Object.keys(a) as (keyof FxSettings)[]).every((k) => Math.abs(a[k] - b[k]) < 0.001);
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="py-3">
@@ -60,7 +25,10 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 // level of each piece of the drum kit.
 export function FxDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const fx = usePlayer((s) => s.fx);
-  const drums = usePlayer((s) => s.drums);
+  const kitOn = usePlayer((s) => s.drumKitOn);
+  const sync = usePlayer((s) => s.drumSync);
+  const variant = usePlayer((s) => s.drumVariant);
+  const synthKeys = usePlayer((s) => s.drumSynthKeys);
 
   return (
     <BottomSheet open={open} onClose={onClose} title="Sound">
@@ -118,30 +86,76 @@ export function FxDialog({ open, onClose }: { open: boolean; onClose: () => void
             onChange={(v) => setEffects({ room: v })}
           />
         </Group>
-        <Group title="Drum kit">
-          {DRUM_PIECES.map((p) => (
-            <Control
-              key={p.id}
-              label={p.label}
-              value={drums[p.id]}
-              display={drums[p.id] === 0 ? "Mute" : percent(drums[p.id])}
-              min={0}
-              max={1.5}
-              step={0.05}
-              onChange={(v) => setDrumLevel(p.id, v)}
+        <Group title="Drums">
+          <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 py-1">
+            <span className="text-sm">Recorded drum samples</span>
+            <input
+              type="checkbox"
+              checked={kitOn}
+              onChange={(e) => setDrumKit(e.target.checked)}
+              className="size-5 accent-[#ff4d57]"
             />
-          ))}
-          <div className="flex items-center justify-between gap-3 pt-1">
-            <p className="text-xs text-muted-foreground">
-              Level per piece only. Changing it restarts the song at the same position.
+          </label>
+          {kitOn && (
+            <>
+              <div role="group" aria-label="Drum kit" className="flex flex-wrap gap-2 pb-1">
+                {KIT_VARIANTS.map((v) => (
+                  <button
+                    key={v.id}
+                    onClick={() => setDrumVariant(v.id)}
+                    aria-pressed={variant === v.id}
+                    className={cn(
+                      "h-10 rounded-lg px-3 text-sm",
+                      variant === v.id ? "bg-white/12 text-white" : "bg-black/30 text-muted-foreground hover:text-white",
+                    )}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+              <p className="pb-2 text-xs text-muted-foreground">
+                {KIT_VARIANTS.find((v) => v.id === variant)?.note}
+                {variant !== "muldjord" && " Hi-hat and cymbals still come from the Muldjord kit."}
+              </p>
+              <Control
+                label="Timing of recorded instruments"
+                value={sync}
+                display={`${sync > 0 ? "+" : ""}${sync} ms`}
+                min={-200}
+                max={200}
+                step={5}
+                onChange={setDrumSync}
+              />
+              <p className="pb-2 text-xs text-muted-foreground">
+                If the recorded drums or bass sound early or late against the rest, move this.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    onClose();
+                    usePlayer.getState().set({ drumMixerOpen: true });
+                  }}
+                  className="flex h-11 flex-1 items-center justify-center rounded-xl bg-white/10 text-sm font-medium hover:bg-white/15"
+                >
+                  Open drum mixer
+                </button>
+                <Link
+                  href="/drums"
+                  className="flex h-11 flex-1 items-center justify-center rounded-xl bg-white/10 text-sm font-medium hover:bg-white/15"
+                >
+                  Drum mixer page
+                </Link>
+              </div>
+            </>
+          )}
+          {kitOn && synthKeys.length > 0 && (
+            <p className="pt-2 text-xs text-muted-foreground">
+              Not in the sampled kit, so the synth plays them: {synthKeys.join(", ")}.
             </p>
-            <button
-              onClick={resetDrums}
-              className="h-10 shrink-0 rounded-lg bg-white/10 px-4 text-sm hover:bg-white/15"
-            >
-              Reset
-            </button>
-          </div>
+          )}
+          <p className="pt-2 text-xs text-muted-foreground">
+            Drum samples: MuldjordKit by Lars Muldjord, mapped by kinwie, CC BY 4.0.
+          </p>
         </Group>
         <div className="flex items-center justify-between gap-3 pt-3">
           <p className="text-xs text-muted-foreground">

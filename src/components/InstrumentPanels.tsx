@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, type RefObject } from "react";
+import { DrumMixer } from "./DrumMixer";
+import { InstrumentMixer } from "./InstrumentMixer";
 import { FloatingPanel } from "./FloatingPanel";
 import { Fretboard } from "./Fretboard";
 import { PianoKeyboard } from "./PianoKeyboard";
@@ -114,6 +116,52 @@ function Panel({
   );
 }
 
+// The drum mixer floats over the player, so the song keeps playing and can be controlled while the drums are tuned.
+function DrumsPanel({ bounds }: { bounds: RefObject<HTMLElement | null> }) {
+  const open = usePlayer((s) => s.drumMixerOpen);
+  const set = usePlayer((s) => s.set);
+  const compact = useCompact();
+  if (!open) return null;
+  return (
+    <FloatingPanel
+      title="Drums"
+      icon={INSTRUMENT_ICONS.drums}
+      bounds={bounds}
+      onClose={() => set({ drumMixerOpen: false })}
+      defaultWidth={460}
+      minWidth={320}
+      className={compact ? "bottom-24 left-3" : "bottom-40 left-3 md:bottom-28"}
+    >
+      <div className="thin-scroll max-h-[min(34rem,calc(100dvh-16rem))] overflow-y-auto px-1 pb-1">
+        <DrumMixer compact />
+      </div>
+    </FloatingPanel>
+  );
+}
+
+// Mixer for the instruments that play from recordings (the bass for now).
+function MixerPanel({ bounds }: { bounds: RefObject<HTMLElement | null> }) {
+  const open = usePlayer((s) => s.instMixerOpen);
+  const set = usePlayer((s) => s.set);
+  const compact = useCompact();
+  if (!open) return null;
+  return (
+    <FloatingPanel
+      title="Mixer"
+      icon="solar:tuning-2-linear"
+      bounds={bounds}
+      onClose={() => set({ instMixerOpen: false })}
+      defaultWidth={420}
+      minWidth={320}
+      className={compact ? "bottom-24 left-3" : "bottom-40 left-3 md:bottom-28"}
+    >
+      <div className="thin-scroll max-h-[min(32rem,calc(100dvh-16rem))] overflow-y-auto px-1 pb-1">
+        <InstrumentMixer />
+      </div>
+    </FloatingPanel>
+  );
+}
+
 export function InstrumentPanels({ bounds }: { bounds: RefObject<HTMLElement | null> }) {
   const hasTracks = usePlayer((s) => s.tracks.length > 0);
   const guitarOpen = usePlayer((s) => s.guitarOpen);
@@ -127,6 +175,8 @@ export function InstrumentPanels({ bounds }: { bounds: RefObject<HTMLElement | n
       <Panel kind="guitar" bounds={bounds} open={guitarOpen} onClose={() => set({ guitarOpen: false })} />
       <Panel kind="bass" bounds={bounds} open={bassOpen} onClose={() => set({ bassOpen: false })} />
       <Panel kind="piano" bounds={bounds} open={pianoOpen} onClose={() => set({ pianoOpen: false })} />
+      <DrumsPanel bounds={bounds} />
+      <MixerPanel bounds={bounds} />
     </div>
   );
 }
