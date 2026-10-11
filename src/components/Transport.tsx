@@ -6,10 +6,11 @@ import { Icon } from "@iconify/react";
 import { useShallow } from "zustand/react/shallow";
 import { Slider } from "@/components/ui/slider";
 import { BottomSheet } from "./BottomSheet";
+import { ExportDialog } from "./ExportDialog";
 import { usePlayer } from "@/lib/player-store";
 import { formatTime } from "@/lib/music";
 import { cn } from "@/lib/utils";
-import { exportMp3, seek, setLooping, setMasterVolume, setMetronome, setSpeed, setZoom, togglePlay } from "@/lib/engine";
+import { seek, setLooping, setMasterVolume, setMetronome, setSpeed, setZoom, togglePlay } from "@/lib/engine";
 
 const SPEEDS = [0.5, 0.75, 1];
 
@@ -47,41 +48,6 @@ function ActionBtn({ icon, label, onClick }: { icon: string; label: string; onCl
   return <IconBtn icon={icon} label={label} onClick={onClick} />;
 }
 
-type Export = { busy: boolean; progress: number; error: string | null; disabled: boolean; run: () => void };
-
-// Renders the song to an MP3 and saves it. Kept in Transport so both the inline bar and the phone sheet share it.
-function useMp3Export(disabled: boolean): Export {
-  const [busy, setBusy] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-
-  const run = async () => {
-    if (busy || disabled) return;
-    setBusy(true);
-    setProgress(0);
-    setError(null);
-    try {
-      const blob = await exportMp3(setProgress);
-      const { title, fileName } = usePlayer.getState();
-      const base = (title || fileName || "backtorock").replace(/\.[^.]+$/, "").replace(/[\\/:*?"<>|]+/g, "-");
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${base}.mp3`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 10_000);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Export failed");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return { busy, progress, error, disabled, run };
-}
-
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-2 py-3">
@@ -92,7 +58,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 }
 
 // Playback options. Inline row on desktop, stacked inside the bottom sheet on a phone.
-function Options({ stacked, exp }: { stacked: boolean; exp: Export }) {
+function Options({ stacked, onExport, exportDisabled }: { stacked: boolean; onExport: () => void; exportDisabled: boolean }) {
   const s = usePlayer(
     useShallow((st) => ({
       speed: st.speed,
@@ -162,8 +128,6 @@ function Options({ stacked, exp }: { stacked: boolean; exp: Export }) {
     </>
   );
 
-  const exportLabel = exp.busy ? `Exporting ${Math.round(exp.progress * 100)}%` : "Export MP3";
-
   if (!stacked) {
     return (
       <div className="flex items-center gap-1">
@@ -171,7 +135,7 @@ function Options({ stacked, exp }: { stacked: boolean; exp: Export }) {
         {volume}
         {toggles}
         {zoom}
-        <IconBtn icon={exp.busy ? "solar:hourglass-linear" : "solar:download-minimalistic-linear"} label={exp.error ?? exportLabel} disabled={exp.busy || exp.disabled} onClick={exp.run} />
+        <IconBtn icon="solar:download-minimalistic-linear" label="Export audio" disabled={exportDisabled} onClick={onExport} />
       </div>
     );
   }
@@ -191,18 +155,13 @@ function Options({ stacked, exp }: { stacked: boolean; exp: Export }) {
       </Row>
       <Row label="Export">
         <button
-          onClick={exp.run}
-          disabled={exp.busy || exp.disabled}
+          onClick={onExport}
+          disabled={exportDisabled}
           className="flex h-11 items-center justify-center gap-2 rounded-xl bg-white/10 text-sm font-medium hover:bg-white/15 disabled:opacity-50"
         >
-          <Icon icon={exp.busy ? "solar:hourglass-linear" : "solar:download-minimalistic-linear"} width={20} />
-          {exportLabel}
+          <Icon icon="solar:download-minimalistic-linear" width={20} />
+          Export audio...
         </button>
-        {exp.error && (
-          <p role="alert" className="text-sm text-[#ff7b83]">
-            {exp.error}
-          </p>
-        )}
       </Row>
     </div>
   );
@@ -222,7 +181,7 @@ export function Transport() {
   const [collapsed, setCollapsed] = useState(false);
   const [sheet, setSheet] = useState(false);
   const disabled = s.status !== "ready" || !s.soundReady;
-  const exp = useMp3Export(disabled);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const playButton = (size: string) => (
     <button
@@ -291,7 +250,7 @@ export function Transport() {
 
         {/* Desktop shows the options inline; on a phone they live behind the menu button. */}
         <div className="hidden md:block">
-          <Options stacked={false} exp={exp} />
+          <Options stacked={false} onExport={() => setExportOpen(true)} exportDisabled={disabled} />
         </div>
         <div className="md:hidden">
           <ActionBtn icon="solar:settings-linear" label="Player settings" onClick={() => setSheet(true)} />
@@ -300,8 +259,17 @@ export function Transport() {
       </motion.div>
 
       <BottomSheet open={sheet} onClose={() => setSheet(false)} title="Player settings">
-        <Options stacked exp={exp} />
+        <Options
+          stacked
+          onExport={() => {
+            setSheet(false);
+            setExportOpen(true);
+          }}
+          exportDisabled={disabled}
+        />
       </BottomSheet>
+
+      <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} />
     </>
   );
 }

@@ -125,6 +125,9 @@ export async function initEngine(container: HTMLElement, viewport: HTMLElement) 
     if (usePlayer.getState().status === "loading") set({ status: "ready" });
   });
   api.soundFontLoad.on((e) => set({ soundProgress: e.total ? e.loaded / e.total : 0 }));
+  // The song length is known as soon as playback data is built, so the time display and the export dialog do not
+  // have to wait for the first play.
+  api.midiLoaded.on((e) => set({ end: e.endTime }));
   api.playerReady.on(() => set({ soundReady: true, soundProgress: 1 }));
   api.playerStateChanged.on((e) => {
     // state 1 = playing
@@ -236,9 +239,20 @@ export function seek(ms: number) {
   if (api) api.timePosition = ms;
   set({ time: ms });
 }
-const MP3_RATE = 44100;
-const MP3_KBPS = 192;
+const EXPORT_RATE = 44100;
 const CHUNK_MS = 1000;
+const MP3_BLOCK = 4608;
+
+export type ExportFormat = "mp3" | "wav";
+export type ExportProgress = { fraction: number; renderedMs: number; totalMs: number };
+export type ExportOptions = {
+  format: ExportFormat;
+  /** MP3 bitrate in kbps; ignored for WAV. */
+  kbps: number;
+  metronome: boolean;
+  onProgress: (p: ExportProgress) => void;
+  signal: AbortSignal;
+};
 
 function toInt16(samples: Float32Array, offset: number, count: number) {
   const left = new Int16Array(count);
@@ -253,49 +267,86 @@ function toInt16(samples: Float32Array, offset: number, count: number) {
   return [left, right] as const;
 }
 
-// Renders the loaded song with the synthesizer (not realtime) and encodes it to MP3. The mix follows the track
+function wavHeader(dataBytes: number) {
+  const view = new DataView(new ArrayBuffer(44));
+  const text = (at: number, s: string) => [...s].forEach((c, i) => view.setUint8(at + i, c.charCodeAt(0)));
+  text(0, "RIFF");
+  view.setUint32(4, 36 + dataBytes, true);
+  text(8, "WAVE");
+  text(12, "fmt ");
+  view.setUint32(16, 16, true); // PCM block size
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, 2, true); // channels
+  view.setUint32(24, EXPORT_RATE, true);
+  view.setUint32(28, EXPORT_RATE * 4, true); // byte rate: 2 channels x 2 bytes
+  view.setUint16(32, 4, true); // block align
+  view.setUint16(34, 16, true); // bits per sample
+  text(36, "data");
+  view.setUint32(40, dataBytes, true);
+  return new Uint8Array(view.buffer);
+}
+
+// Renders the loaded song with the synthesizer (faster than realtime) and encodes it. The mix follows the track
 // panel: muted tracks are silent, solo keeps only the soloed ones, and track and master volume carry over.
-// Playback speed and the metronome are not part of the file.
-export async function exportMp3(onProgress: (fraction: number) => void): Promise<Blob> {
+// Playback speed is not part of the file. Rejects with an AbortError when `signal` is aborted.
+export async function exportAudio({ format, kbps, metronome, onProgress, signal }: ExportOptions): Promise<Blob> {
   const alphaTab = window.alphaTab;
   if (!api || !alphaTab || !api.score) throw new Error("Open a song first");
   const { tracks, masterVolume } = usePlayer.getState();
 
   const options = new alphaTab.synth.AudioExportOptions();
-  options.sampleRate = MP3_RATE;
+  options.sampleRate = EXPORT_RATE;
   options.useSyncPoints = false;
   options.masterVolume = masterVolume;
-  options.metronomeVolume = 0;
+  options.metronomeVolume = metronome ? 1 : 0;
   const anySolo = tracks.some((t) => t.solo);
   options.trackVolume = new Map(tracks.map((t) => [t.index, t.muted || (anySolo && !t.solo) ? 0 : t.gain]));
 
-  const { Mp3Encoder } = await import("@breezystack/lamejs");
-  const encoder = new Mp3Encoder(2, MP3_RATE, MP3_KBPS);
-  const parts: Uint8Array<ArrayBuffer>[] = [];
-  const keep = (bytes: Uint8Array) => {
-    if (bytes.length) parts.push(new Uint8Array(bytes));
-  };
+  const encoder =
+    format === "mp3" ? new (await import("@breezystack/lamejs")).Mp3Encoder(2, EXPORT_RATE, kbps) : null;
+  const parts: BlobPart[] = [];
+  let wavBytes = 0;
 
   const exporter = await api.exportAudio(options);
   try {
     for (;;) {
+      if (signal.aborted) throw new DOMException("Export cancelled", "AbortError");
       const chunk = await exporter.render(CHUNK_MS);
       if (!chunk) break;
       const frames = Math.floor(chunk.samples.length / 2);
-      // The encoder takes at most a few thousand frames at a time without growing its buffer, so feed it in blocks.
-      for (let at = 0; at < frames; at += 4608) {
-        const count = Math.min(4608, frames - at);
-        const [l, r] = toInt16(chunk.samples, at * 2, count);
-        keep(encoder.encodeBuffer(l, r));
+      if (encoder) {
+        // The encoder is fed in blocks of a few thousand frames so its internal buffer does not grow.
+        for (let at = 0; at < frames; at += MP3_BLOCK) {
+          const [l, r] = toInt16(chunk.samples, at * 2, Math.min(MP3_BLOCK, frames - at));
+          const bytes = encoder.encodeBuffer(l, r);
+          if (bytes.length) parts.push(new Uint8Array(bytes));
+        }
+      } else {
+        const pcm = new Int16Array(frames * 2);
+        const [l, r] = toInt16(chunk.samples, 0, frames);
+        for (let i = 0; i < frames; i++) {
+          pcm[i * 2] = l[i];
+          pcm[i * 2 + 1] = r[i];
+        }
+        parts.push(pcm);
+        wavBytes += pcm.byteLength;
       }
-      onProgress(chunk.endTime ? Math.min(1, chunk.currentTime / chunk.endTime) : 0);
+      onProgress({
+        fraction: chunk.endTime ? Math.min(1, chunk.currentTime / chunk.endTime) : 0,
+        renderedMs: chunk.currentTime,
+        totalMs: chunk.endTime,
+      });
     }
   } finally {
     exporter.destroy();
   }
-  keep(encoder.flush());
-  onProgress(1);
-  return new Blob(parts, { type: "audio/mpeg" });
+
+  if (encoder) {
+    const tail = encoder.flush();
+    if (tail.length) parts.push(new Uint8Array(tail));
+    return new Blob(parts, { type: "audio/mpeg" });
+  }
+  return new Blob([wavHeader(wavBytes), ...parts], { type: "audio/wav" });
 }
 
 export function destroyEngine() {
