@@ -98,7 +98,7 @@ export const usePlayer = create<PlayerState>((set) => ({
   fx: FX_DEFAULT,
   drums: DRUM_DEFAULT,
   drumFx: DRUM_FX_DEFAULT,
-  drumKitOn: true,
+  drumKitOn: false,
   drumVariant: "muldjord",
   drumSync: 0,
   drumRoom: DEFAULT_ROOM,

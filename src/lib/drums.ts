@@ -218,7 +218,7 @@ export const KIT_VARIANTS: { id: KitVariant; label: string; note: string }[] = [
 
 export function loadKitPrefs(): KitPrefs {
   const prefs = {
-    on: true,
+    on: false,
     sync: 0,
     room: DEFAULT_ROOM,
     variant: "muldjord",
