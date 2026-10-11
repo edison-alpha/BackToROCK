@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { DRUM_DEFAULT, type DrumLevels } from "./drums";
+import { FX_DEFAULT, type FxSettings } from "./fx";
 import type { SongMeta } from "./songbook";
 
 export type InstrumentKind = "piano" | "guitar" | "bass" | "drums" | "other";
@@ -40,6 +42,8 @@ type PlayerState = {
   metronome: boolean;
   soundReady: boolean;
   soundProgress: number;
+  fx: FxSettings;
+  drums: DrumLevels;
   songs: SongMeta[];
   songsState: "loading" | "ready" | "error";
   // Notes sounding right now, keyed by track index, so every panel can follow its own track.
@@ -69,6 +73,8 @@ export const usePlayer = create<PlayerState>((set) => ({
   metronome: false,
   soundReady: false,
   soundProgress: 0,
+  fx: FX_DEFAULT,
+  drums: DRUM_DEFAULT,
   songs: [],
   songsState: "loading",
   activeByTrack: {},

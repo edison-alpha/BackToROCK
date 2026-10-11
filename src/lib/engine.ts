@@ -1,4 +1,6 @@
 import type * as AT from "@coderline/alphatab";
+import { DRUM_DEFAULT, loadDrums, pieceOf, saveDrums, type DrumPiece } from "./drums";
+import { installFx, loadFx, setFx, type FxSettings } from "./fx";
 import { usePlayer, type ActiveNote, type InstrumentKind, type TrackInfo } from "./player-store";
 
 type AlphaTabNs = typeof AT;
@@ -94,6 +96,10 @@ export async function initEngine(container: HTMLElement, viewport: HTMLElement) 
   if (id !== initId) return;
   api?.destroy();
 
+  // The effects chain hooks into the AudioContext class, so it has to be installed before alphaTab creates one.
+  installFx();
+  set({ fx: loadFx(), drums: loadDrums() });
+
   // Workers and the audio worklet run from blob URLs, where root-relative paths do not resolve, so use absolute URLs.
   const origin = `${location.origin}${BASE}`;
   api = new alphaTab.AlphaTabApi(container, {
@@ -127,7 +133,29 @@ export async function initEngine(container: HTMLElement, viewport: HTMLElement) 
   api.soundFontLoad.on((e) => set({ soundProgress: e.total ? e.loaded / e.total : 0 }));
   // The song length is known as soon as playback data is built, so the time display and the export dialog do not
   // have to wait for the first play.
-  api.midiLoaded.on((e) => set({ end: e.endTime }));
+  api.midiLoaded.on((e) => {
+    set({ end: e.endTime });
+    if (resume && api) {
+      const { time, play } = resume;
+      resume = null;
+      api.timePosition = time;
+      if (play) api.play();
+    }
+  });
+  // Scale the velocity of drum notes by the level of their kit piece. The file is generated fresh for every load, so
+  // the scaling never stacks.
+  api.midiLoad.on((file) => {
+    const levels = usePlayer.getState().drums;
+    if (Object.values(levels).every((v) => v === 1)) return;
+    const channels = new Set(
+      (api?.score?.tracks ?? []).filter((t) => t.isPercussion).map((t) => t.playbackInfo.primaryChannel),
+    );
+    for (const ev of file.events) {
+      if (!(ev instanceof alphaTab.midi.NoteOnEvent) || !channels.has(ev.channel) || ev.noteVelocity === 0) continue;
+      const level = levels[pieceOf(ev.noteKey)];
+      ev.noteVelocity = level === 0 ? 0 : Math.max(1, Math.min(127, Math.round(ev.noteVelocity * level)));
+    }
+  });
   api.playerReady.on(() => set({ soundReady: true, soundProgress: 1 }));
   api.playerStateChanged.on((e) => {
     // state 1 = playing
@@ -234,6 +262,36 @@ export function setTrackVolume(index: number, v: number) {
 export function setMasterVolume(v: number) {
   if (api) api.masterVolume = v;
   set({ masterVolume: v });
+}
+let resume: { time: number; play: boolean } | null = null;
+let drumTimer: ReturnType<typeof setTimeout> | undefined;
+
+// Drum levels live in the generated MIDI, so a change regenerates it. That stops playback; the position is restored
+// afterwards and playback continues if it was running. Reloading waits until the slider has stopped moving.
+export function setDrumLevel(piece: DrumPiece, v: number) {
+  const drums = { ...usePlayer.getState().drums, [piece]: v };
+  saveDrums(drums);
+  set({ drums });
+  clearTimeout(drumTimer);
+  drumTimer = setTimeout(reloadMidi, 350);
+}
+export function resetDrums() {
+  saveDrums(DRUM_DEFAULT);
+  set({ drums: DRUM_DEFAULT });
+  clearTimeout(drumTimer);
+  reloadMidi();
+}
+function reloadMidi() {
+  if (!api?.score) return;
+  const { time, playing } = usePlayer.getState();
+  resume = { time, play: playing };
+  api.loadMidiForScore();
+}
+
+export function setEffects(patch: Partial<FxSettings>) {
+  const fx = { ...usePlayer.getState().fx, ...patch };
+  setFx(fx);
+  set({ fx });
 }
 export function seek(ms: number) {
   if (api) api.timePosition = ms;

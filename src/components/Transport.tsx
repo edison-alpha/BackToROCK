@@ -7,6 +7,7 @@ import { useShallow } from "zustand/react/shallow";
 import { Slider } from "@/components/ui/slider";
 import { BottomSheet } from "./BottomSheet";
 import { ExportDialog } from "./ExportDialog";
+import { FxDialog } from "./FxDialog";
 import { usePlayer } from "@/lib/player-store";
 import { formatTime } from "@/lib/music";
 import { cn } from "@/lib/utils";
@@ -58,7 +59,17 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 }
 
 // Playback options. Inline row on desktop, stacked inside the bottom sheet on a phone.
-function Options({ stacked, onExport, exportDisabled }: { stacked: boolean; onExport: () => void; exportDisabled: boolean }) {
+function Options({
+  stacked,
+  onExport,
+  exportDisabled,
+  onSound,
+}: {
+  stacked: boolean;
+  onExport: () => void;
+  exportDisabled: boolean;
+  onSound: () => void;
+}) {
   const s = usePlayer(
     useShallow((st) => ({
       speed: st.speed,
@@ -135,6 +146,7 @@ function Options({ stacked, onExport, exportDisabled }: { stacked: boolean; onEx
         {volume}
         {toggles}
         {zoom}
+        <IconBtn icon="solar:tuning-2-linear" label="Sound: EQ, compressor, reverb" onClick={onSound} />
         <IconBtn icon="solar:download-minimalistic-linear" label="Export audio" disabled={exportDisabled} onClick={onExport} />
       </div>
     );
@@ -152,6 +164,15 @@ function Options({ stacked, onExport, exportDisabled }: { stacked: boolean; onEx
       </Row>
       <Row label={`Score size (${Math.round(s.zoom * 100)}%)`}>
         <div className="flex items-center gap-1">{zoom}</div>
+      </Row>
+      <Row label="Sound">
+        <button
+          onClick={onSound}
+          className="flex h-11 items-center justify-center gap-2 rounded-xl bg-white/10 text-sm font-medium hover:bg-white/15"
+        >
+          <Icon icon="solar:tuning-2-linear" width={20} />
+          EQ, compressor, reverb...
+        </button>
       </Row>
       <Row label="Export">
         <button
@@ -182,6 +203,7 @@ export function Transport() {
   const [sheet, setSheet] = useState(false);
   const disabled = s.status !== "ready" || !s.soundReady;
   const [exportOpen, setExportOpen] = useState(false);
+  const [fxOpen, setFxOpen] = useState(false);
 
   const playButton = (size: string) => (
     <button
@@ -250,7 +272,7 @@ export function Transport() {
 
         {/* Desktop shows the options inline; on a phone they live behind the menu button. */}
         <div className="hidden md:block">
-          <Options stacked={false} onExport={() => setExportOpen(true)} exportDisabled={disabled} />
+          <Options stacked={false} onExport={() => setExportOpen(true)} exportDisabled={disabled} onSound={() => setFxOpen(true)} />
         </div>
         <div className="md:hidden">
           <ActionBtn icon="solar:settings-linear" label="Player settings" onClick={() => setSheet(true)} />
@@ -266,9 +288,14 @@ export function Transport() {
             setExportOpen(true);
           }}
           exportDisabled={disabled}
+          onSound={() => {
+            setSheet(false);
+            setFxOpen(true);
+          }}
         />
       </BottomSheet>
 
+      <FxDialog open={fxOpen} onClose={() => setFxOpen(false)} />
       <ExportDialog open={exportOpen} onClose={() => setExportOpen(false)} />
     </>
   );
