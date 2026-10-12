@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { DEFAULT_ROOM, DRUM_DEFAULT, DRUM_FX_DEFAULT, type DrumFx, type DrumLevels, type DrumPiece, type DrumSettings, type KitVariant } from "./drums";
+import { DEFAULT_ROOM, defaultsFor, type DrumFx, type DrumLevels, type DrumPiece, type DrumSettings, type KitVariant } from "./drums";
 import { FX_DEFAULT, type FxSettings } from "./fx";
 import { INSTRUMENTS, INST_DEFAULT, type InstId, type InstMix } from "./instruments";
 import type { SongMeta } from "./songbook";
@@ -96,10 +96,10 @@ export const usePlayer = create<PlayerState>((set) => ({
   soundReady: false,
   soundProgress: 0,
   fx: FX_DEFAULT,
-  drums: DRUM_DEFAULT,
-  drumFx: DRUM_FX_DEFAULT,
-  drumKitOn: false,
-  drumVariant: "muldjord",
+  drums: defaultsFor("vortex-all").levels,
+  drumFx: defaultsFor("vortex-all").fx,
+  drumKitOn: true,
+  drumVariant: "vortex-all",
   drumSync: 0,
   drumRoom: DEFAULT_ROOM,
   drumSaved: null,

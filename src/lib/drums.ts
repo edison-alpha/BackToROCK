@@ -151,23 +151,23 @@ export const saveDrumFx = (value: DrumFx, variant: KitVariant = "muldjord") => w
 // The Vortex recordings are already tight and dry, so they need no pitch-up and less EQ than the Muldjord kit; the
 // kick sits lower, the snare is up front, and hi-hat and cymbals are a little louder.
 const VORTEX_LEVELS: DrumLevels = levels({
-  kick: 0.55, snare: 0.95, tom1: 0.65, tom2: 0.65, tom3: 0.7, tom4: 0.7, hihat: 0.6,
-  crashL: 0.45, crashR: 0.5, rideL: 0.55, rideR: 0.55, china: 0.7,
+  kick: 0.5, snare: 0.4, tom1: 0.55, tom2: 0.45, tom3: 0.45, tom4: 0.45, hihat: 1.3,
+  crashL: 0.7, crashR: 0.7, rideL: 0.75, rideR: 0.85, china: 0.7,
 });
 
 const VORTEX_FX: DrumFx = fxOf({
-  kick: tone({ mid: -5 }),
-  snare: tone({ mid: -3, pan: -0.15, pitch: 1.5 }),
-  tom1: tone({ high: 1, pan: -0.55, pitch: 1 }),
-  tom2: tone({ mid: -8, pan: -0.15 }),
-  tom3: tone({ mid: -5, pan: 0.2 }),
-  tom4: tone({ mid: -5, pan: 0.25 }),
-  hihat: tone({ mid: -7 }),
+  kick: tone({ mid: -5, comp: 0.15, reverb: 0.15 }),
+  snare: tone({ high: 2, comp: 0.35, reverb: 0.2, pan: -0.2, pitch: 3 }),
+  tom1: tone({ high: 1, comp: 0.05, reverb: 0.1, pan: -0.7, pitch: 2 }),
+  tom2: tone({ mid: -8, comp: 0.15, pan: -0.35, pitch: 2 }),
+  tom3: tone({ mid: -5, comp: 0.15, pan: 0.25, pitch: 1 }),
+  tom4: tone({ mid: -5, comp: 0.15, reverb: 0.2, pan: 0.55, pitch: 1 }),
+  hihat: tone({ mid: -6, high: -1, reverb: 0.2 }),
   crashL: tone({ mid: -8, reverb: 0.2, pitch: 1 }),
   crashR: tone({ mid: -8, reverb: 0.05, pitch: 2 }),
   rideL: tone({ mid: -6, pitch: 2 }),
   rideR: tone({ mid: -5, pitch: 1 }),
-  china: tone({ mid: -7, pan: 0.3 }),
+  china: tone({ mid: -7, reverb: 0.2, pan: 0.3 }),
 });
 
 /** The balance and tone a kit starts with, and returns to on Reset. */
@@ -218,10 +218,10 @@ export const KIT_VARIANTS: { id: KitVariant; label: string; note: string }[] = [
 
 export function loadKitPrefs(): KitPrefs {
   const prefs = {
-    on: false,
+    on: true,
     sync: 0,
     room: DEFAULT_ROOM,
-    variant: "muldjord",
+    variant: "vortex-all",
     ...(read("btr-drum-kit") as Partial<KitPrefs> | null),
   } as KitPrefs;
   if (!KIT_VARIANTS.some((v) => v.id === prefs.variant)) prefs.variant = "muldjord";

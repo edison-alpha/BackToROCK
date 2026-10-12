@@ -16,7 +16,7 @@ export type FxSettings = {
 };
 
 const FX_FLAT: FxSettings = { low: 0, mid: 0, high: 0, compressor: 0, reverb: 0, room: 1.8 };
-const FX_ROCK: FxSettings = { low: 0, mid: -3, high: 5, compressor: 0.55, reverb: 0.7, room: 1.2 };
+const FX_ROCK: FxSettings = { low: -2, mid: -7, high: 4, compressor: 0.2, reverb: 0.4, room: 0.8 };
 
 // Rock is the default sound.
 export const FX_DEFAULT = FX_ROCK;
