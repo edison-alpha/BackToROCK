@@ -43,6 +43,7 @@ declare global {
 }
 
 const BASE = "/alphatab";
+const SOUNDFONT = "soundfont/sonivox.sf2";
 let api: AT.AlphaTabApi | null = null;
 let scriptPromise: Promise<AlphaTabNs> | null = null;
 
@@ -165,7 +166,7 @@ export async function initEngine(container: HTMLElement, viewport: HTMLElement) 
     core: { scriptFile: `${origin}/alphaTab.min.js`, fontDirectory: `${origin}/font/` },
     player: {
       enablePlayer: true,
-      soundFont: `${origin}/soundfont/sonivox.sf2`,
+      soundFont: `${origin}/${SOUNDFONT}`,
       scrollElement: viewport,
     },
     display: { scale: usePlayer.getState().zoom },
@@ -613,6 +614,21 @@ export function seek(ms: number) {
   if (api) api.timePosition = ms;
   set({ time: ms });
 }
+let soundFont: Promise<Uint8Array> | null = null;
+function soundFontData() {
+  soundFont ??= fetch(`${BASE}/${SOUNDFONT}`)
+    .then((res) => {
+      if (!res.ok) throw new Error("Could not load the sound font");
+      return res.arrayBuffer();
+    })
+    .then((data) => new Uint8Array(data))
+    .catch((e) => {
+      soundFont = null;
+      throw e;
+    });
+  return soundFont;
+}
+
 const EXPORT_RATE = 44100;
 const CHUNK_MS = 1000;
 const MP3_BLOCK = 4608;
@@ -709,12 +725,16 @@ export async function exportAudio({ format, kbps, metronome, onProgress, signal 
       onProgress({ fraction: (i + f) / steps, renderedMs: f * total, totalMs: total, stage: r.stage });
     report(0);
     const audio = await r.render(report);
-    console.log("[t] stem", r.stage, audio && Math.max(...audio.getChannelData(0).filter((_, j) => j % 100 === 0).map(Math.abs)));
     if (!audio) continue;
     stems.push({ left: audio.getChannelData(0), right: audio.getChannelData(1) });
     for (const t of r.tracks) silenced.add(t);
   }
   options.trackVolume = new Map(tracks.map((t) => [t.index, silenced.has(t.index) ? 0 : volume(t)]));
+  // The player's synth only loaded soundfont samples for the notes left in its MIDI. The export MIDI still has the
+  // notes the samplers took over, and on the player's presets those read missing sample data: the synth outputs NaN,
+  // which silences the whole mix wherever such a note sounds (heard as dropouts and drums off the beat). So the export
+  // loads the full soundfont instead.
+  if (kitActive || instActive.length > 0) options.soundFonts = [await soundFontData()];
 
   const encoder =
     format === "mp3" ? new (await import("@breezystack/lamejs")).Mp3Encoder(2, EXPORT_RATE, kbps) : null;
@@ -730,7 +750,6 @@ export async function exportAudio({ format, kbps, metronome, onProgress, signal 
       const chunk = await exporter.render(CHUNK_MS);
       if (!chunk) break;
       const frames = Math.floor(chunk.samples.length / 2);
-      if (frameAt < 44100 * 8) console.log("[t] chunk", frameAt, chunk.samples.reduce((m, v) => Math.max(m, Math.abs(v)), 0), [...options.trackVolume]);
       for (const { left, right } of stems) {
         for (let i = 0; i < frames && frameAt + i < left.length; i++) {
           chunk.samples[i * 2] += left[frameAt + i];
