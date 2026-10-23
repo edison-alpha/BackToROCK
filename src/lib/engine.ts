@@ -667,6 +667,8 @@ function wavHeader(dataBytes: number) {
 export async function exportAudio({ format, kbps, metronome, onProgress, signal }: ExportOptions): Promise<Blob> {
   const alphaTab = window.alphaTab;
   if (!api || !alphaTab || !api.score) throw new Error("Open a song first");
+  // Playback and the export share the synth worker and the main thread, so playing on would slow both down.
+  if (usePlayer.getState().playing) api.pause();
   const { tracks, masterVolume, instActive, end: total } = usePlayer.getState();
 
   const options = new alphaTab.synth.AudioExportOptions();
