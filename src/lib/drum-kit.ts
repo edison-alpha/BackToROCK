@@ -7,6 +7,7 @@
 //
 // Each drum (kick, snare, every tom, hi-hat, every cymbal) has its own channel strip: level, 3-band EQ, compressor and a
 // send to a shared room reverb.
+import { renderScheduled } from "./clock";
 import { DRUM_PIECES, type DrumFx, type DrumLevels, type DrumPiece, type KitVariant, type PieceFx } from "./drums";
 
 type Layer = { lo: number; hi: number; hits: number[] };
@@ -75,7 +76,7 @@ type Strip = {
   send: GainNode;
 };
 
-type Voice = { piece: string; src: AudioBufferSourceNode; gain: GainNode };
+type Voice = { piece: string; src: AudioBufferSourceNode; gain: GainNode; end: number };
 type Timed = { ms: number; key: number; vel: number };
 type TempoSegment = { tick: number; ms: number; msPerTick: number };
 
@@ -335,7 +336,13 @@ export class DrumKit {
    * playback (but not the timing offset, which only compensates for live output latency). Null when there is nothing to
    * render. `gain` is the drum track's volume, after mute and solo.
    */
-  async renderOffline(seconds: number, sampleRate: number, gain: number, onProgress: (f: number) => void) {
+  async renderOffline(
+    seconds: number,
+    sampleRate: number,
+    gain: number,
+    signal: AbortSignal,
+    onProgress: (f: number) => void,
+  ) {
     if (!this.manifest || !this.levels || !this.fx || this.timeline.length === 0) return null;
     const offline = new OfflineAudioContext(2, Math.ceil(seconds * sampleRate), sampleRate);
     const kit = new DrumKit();
@@ -346,9 +353,10 @@ export class DrumKit {
     kit.setLevels(this.levels);
     kit.setFx(this.fx);
     kit.setTrackGain(gain);
-    await kit.loadSamples(this.timeline.map((e) => ({ tick: 0, key: e.key, vel: e.vel })), onProgress);
-    for (const e of this.timeline) if (e.ms / 1000 < seconds) kit.trigger(e, e.ms / 1000);
-    return offline.startRendering();
+    // Samples decoded for playback work in any context, so only the missing ones are fetched again.
+    for (const [key, buffer] of this.buffers) kit.buffers.set(key, buffer);
+    await kit.loadSamples(this.timeline.map((e) => ({ tick: 0, key: e.key, vel: e.vel })));
+    return renderScheduled(offline, this.timeline, (e, when) => kit.trigger(e, when), onProgress, signal);
   }
 
   /** Plays one hit right away (for trying a drum's tone), loading its samples first if needed. */
@@ -446,16 +454,21 @@ export class DrumKit {
     src.detune.value = (this.pitch.get(target.group) ?? 0) * 100; // cents
     src.connect(gain);
     gain.connect(strip.input);
-    const voice: Voice = { piece, src, gain };
+    const end = when + buffer.duration / 2 ** (src.detune.value / 1200);
+    const voice: Voice = { piece, src, gain, end };
     this.voices.add(voice);
     src.onended = () => {
       this.voices.delete(voice);
       gain.disconnect();
     };
 
-    // A hi-hat that closes cuts the open one, and an open hit replaces the previous open hit.
+    // A hi-hat that closes cuts the open one, and an open hit replaces the previous open hit. Voices that are already
+    // over are dropped here too: an offline render schedules ahead of the audio, before their `ended` event can fire.
     if (piece === "HihatClosed" || piece === "HihatOpen") {
-      for (const v of this.voices) if (v !== voice && v.piece === "HihatOpen") this.fadeOut(v, when, 0.03);
+      for (const v of this.voices) {
+        if (v.end <= when) this.voices.delete(v);
+        else if (v !== voice && v.piece === "HihatOpen") this.fadeOut(v, when, 0.03);
+      }
     }
     src.start(when);
   }

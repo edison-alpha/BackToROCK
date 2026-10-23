@@ -109,7 +109,12 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
     const controller = new AbortController();
     abort.current = controller;
     const startedAt = Date.now();
-    setPhase({ name: "running", progress: { fraction: 0, renderedMs: 0, totalMs: end }, startedAt, now: startedAt });
+    setPhase({
+      name: "running",
+      progress: { fraction: 0, renderedMs: 0, totalMs: end, stage: "Mixing down" },
+      startedAt,
+      now: startedAt,
+    });
     try {
       const blob = await exportAudio({
         format,
@@ -167,7 +172,8 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
             </label>
             <p className="py-3 text-xs text-muted-foreground">
               The mix follows the Track panel: muted tracks stay silent, solo keeps only soloed tracks, and track and
-              master volume apply. Playback speed is not included.
+              master volume apply. Sampled drums and instruments are included with their mixer settings. Playback
+              speed and the master effects are not included.
             </p>
             {phase.name === "error" && (
               <p role="alert" className="py-3 text-sm text-[#ff7b83]">
@@ -234,15 +240,15 @@ function Mixdown({ phase }: { phase: Extract<Phase, { name: "running" }> }) {
   const { progress, startedAt, now } = phase;
   const percent = Math.round(progress.fraction * 100);
   const elapsed = (now - startedAt) / 1000;
-  // Mixdown speed relative to the song length, like a DAW's "x realtime".
-  const speed = elapsed > 0.5 ? progress.renderedMs / 1000 / elapsed : 0;
+  // Speed relative to the song length, like a DAW's "x realtime", across every stage of the export.
+  const speed = elapsed > 0.5 ? (progress.fraction * progress.totalMs) / 1000 / elapsed : 0;
   const remaining =
     progress.fraction > 0.02 && elapsed > 0.5 ? (elapsed / progress.fraction) * (1 - progress.fraction) : null;
 
   return (
     <div className="flex flex-col gap-3 py-6">
       <div className="flex items-baseline justify-between">
-        <p className="font-semibold">Mixing down...</p>
+        <p className="font-semibold">{progress.stage}...</p>
         <p className="text-2xl font-extrabold tabular-nums">{percent}%</p>
       </div>
       <div

@@ -7,6 +7,42 @@ type TempoSegment = { tick: number; ms: number; msPerTick: number };
 
 const LOOKAHEAD = 0.15; // seconds scheduled ahead
 const PUMP_MS = 25;
+const RENDER_STEP = 2; // seconds of offline audio rendered between scheduling rounds
+
+/**
+ * Renders an offline context with `events` scheduled a few seconds ahead at a time. Scheduling the whole song up front
+ * puts thousands of source nodes in the graph at once, and every one of them is processed on every render quantum, so
+ * a full song would take minutes. Sorted `events` are required. Rejects with an AbortError when `signal` is aborted.
+ */
+export async function renderScheduled<T extends { ms: number }>(
+  ctx: OfflineAudioContext,
+  events: readonly T[],
+  fire: (e: T, when: number) => void,
+  onProgress: (fraction: number) => void,
+  signal: AbortSignal,
+) {
+  const seconds = ctx.length / ctx.sampleRate;
+  let next = 0;
+  const scheduleUntil = (until: number) => {
+    for (; next < events.length && events[next].ms / 1000 < until; next++) {
+      const at = events[next].ms / 1000;
+      if (at < seconds) fire(events[next], at);
+    }
+  };
+  scheduleUntil(RENDER_STEP * 2);
+  for (let t = RENDER_STEP; t < seconds; t += RENDER_STEP) {
+    void ctx.suspend(t).then(() => {
+      // Once cancelled, nothing more is scheduled, so the rest renders as silence and finishes quickly.
+      if (!signal.aborted) scheduleUntil(t + RENDER_STEP * 2);
+      onProgress(t / seconds);
+      void ctx.resume();
+    });
+  }
+  const audio = await ctx.startRendering();
+  if (signal.aborted) throw new DOMException("Export cancelled", "AbortError");
+  onProgress(1);
+  return audio;
+}
 
 export class SongClock<T extends { ms: number }> {
   private tempo: TempoSegment[] = [{ tick: 0, ms: 0, msPerTick: 0.5 }];
@@ -23,7 +59,7 @@ export class SongClock<T extends { ms: number }> {
    * `fire` plays an event at the given audio time. `stop` cuts what is sounding, when playback pauses or jumps.
    */
   constructor(
-    private ctx: () => AudioContext | null,
+    private ctx: () => BaseAudioContext | null,
     private fire: (e: T, when: number) => void,
     private stop: () => void,
   ) {}
@@ -48,6 +84,11 @@ export class SongClock<T extends { ms: number }> {
       seg = s;
     }
     return seg.ms + (tick - seg.tick) * seg.msPerTick;
+  }
+
+  /** The events of the song, sorted by time. */
+  get all(): readonly T[] {
+    return this.events;
   }
 
   setEvents(events: T[]) {

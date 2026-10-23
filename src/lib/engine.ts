@@ -618,7 +618,8 @@ const CHUNK_MS = 1000;
 const MP3_BLOCK = 4608;
 
 export type ExportFormat = "mp3" | "wav";
-export type ExportProgress = { fraction: number; renderedMs: number; totalMs: number };
+/** `stage` is what is rendering: a sampled drum kit or instrument, or the final mix with the synth. */
+export type ExportProgress = { fraction: number; renderedMs: number; totalMs: number; stage: string };
 export type ExportOptions = {
   format: ExportFormat;
   /** MP3 bitrate in kbps; ignored for WAV. */
@@ -666,7 +667,7 @@ function wavHeader(dataBytes: number) {
 export async function exportAudio({ format, kbps, metronome, onProgress, signal }: ExportOptions): Promise<Blob> {
   const alphaTab = window.alphaTab;
   if (!api || !alphaTab || !api.score) throw new Error("Open a song first");
-  const { tracks, masterVolume } = usePlayer.getState();
+  const { tracks, masterVolume, instActive, end: total } = usePlayer.getState();
 
   const options = new alphaTab.synth.AudioExportOptions();
   options.sampleRate = EXPORT_RATE;
@@ -675,24 +676,50 @@ export async function exportAudio({ format, kbps, metronome, onProgress, signal 
   options.metronomeVolume = metronome ? 1 : 0;
   const anySolo = tracks.some((t) => t.solo);
   const volume = (t: (typeof tracks)[number]) => (t.muted || (anySolo && !t.solo) ? 0 : t.gain);
-  // The export synth builds its own MIDI, so the drum notes the sampled kit plays are still in it. The synth drums are
-  // silenced and the kit is rendered separately and mixed in.
+
+  // The export synth builds its own MIDI, so the notes the sampled kit and instruments play are still in it. Their
+  // tracks are silenced on the synth, and each sampler renders its part separately (a stem) to be mixed in.
+  const renders: { stage: string; tracks: number[]; render: (p: (f: number) => void) => Promise<AudioBuffer | null> }[] =
+    [];
+  const seconds = total / 1000 + 2;
   const drumTrack = tracks.find((t) => t.percussion);
-  const total = usePlayer.getState().end;
-  let drums: AudioBuffer | null = null;
   if (kitActive && drumTrack && total > 0) {
-    drums = await drumKit.renderOffline(total / 1000 + 2, EXPORT_RATE, volume(drumTrack), () => {});
+    renders.push({
+      stage: "Rendering drums",
+      tracks: [drumTrack.index],
+      render: (p) => drumKit.renderOffline(seconds, EXPORT_RATE, volume(drumTrack), signal, p),
+    });
   }
-  options.trackVolume = new Map(tracks.map((t) => [t.index, drums && t.percussion ? 0 : volume(t)]));
+  for (const id of total > 0 ? instActive : []) {
+    const inst = INSTRUMENTS.find((i) => i.id === id)!;
+    renders.push({
+      stage: `Rendering ${inst.label.toLowerCase()}`,
+      tracks: tracks.filter((t) => !t.percussion && inst.programs.includes(t.program)).map((t) => t.index),
+      render: (p) => sampled.get(id)!.renderOffline(seconds, EXPORT_RATE, signal, p),
+    });
+  }
+  // Each sampler counts as one step of the progress bar, the final mix as two.
+  const steps = renders.length + 2;
+  const stems: { left: Float32Array; right: Float32Array }[] = [];
+  const silenced = new Set<number>();
+  for (const [i, r] of renders.entries()) {
+    const report = (f: number) =>
+      onProgress({ fraction: (i + f) / steps, renderedMs: f * total, totalMs: total, stage: r.stage });
+    report(0);
+    const audio = await r.render(report);
+    if (!audio) continue;
+    stems.push({ left: audio.getChannelData(0), right: audio.getChannelData(1) });
+    for (const t of r.tracks) silenced.add(t);
+  }
+  options.trackVolume = new Map(tracks.map((t) => [t.index, silenced.has(t.index) ? 0 : volume(t)]));
 
   const encoder =
     format === "mp3" ? new (await import("@breezystack/lamejs")).Mp3Encoder(2, EXPORT_RATE, kbps) : null;
   const parts: BlobPart[] = [];
   let wavBytes = 0;
-  let frameAt = 0; // frames of the song rendered so far, to find the same place in the drum audio
-  const drumL = drums?.getChannelData(0);
-  const drumR = drums?.getChannelData(1);
+  let frameAt = 0; // frames of the song rendered so far, to find the same place in the stems
 
+  if (signal.aborted) throw new DOMException("Export cancelled", "AbortError");
   const exporter = await api.exportAudio(options);
   try {
     for (;;) {
@@ -700,10 +727,10 @@ export async function exportAudio({ format, kbps, metronome, onProgress, signal 
       const chunk = await exporter.render(CHUNK_MS);
       if (!chunk) break;
       const frames = Math.floor(chunk.samples.length / 2);
-      if (drumL && drumR) {
-        for (let i = 0; i < frames && frameAt + i < drumL.length; i++) {
-          chunk.samples[i * 2] += drumL[frameAt + i];
-          chunk.samples[i * 2 + 1] += drumR[frameAt + i];
+      for (const { left, right } of stems) {
+        for (let i = 0; i < frames && frameAt + i < left.length; i++) {
+          chunk.samples[i * 2] += left[frameAt + i];
+          chunk.samples[i * 2 + 1] += right[frameAt + i];
         }
       }
       frameAt += frames;
@@ -724,10 +751,12 @@ export async function exportAudio({ format, kbps, metronome, onProgress, signal 
         parts.push(pcm);
         wavBytes += pcm.byteLength;
       }
+      const mixed = chunk.endTime ? Math.min(1, chunk.currentTime / chunk.endTime) : 0;
       onProgress({
-        fraction: chunk.endTime ? Math.min(1, chunk.currentTime / chunk.endTime) : 0,
+        fraction: (renders.length + mixed * 2) / steps,
         renderedMs: chunk.currentTime,
         totalMs: chunk.endTime,
+        stage: "Mixing down",
       });
     }
   } finally {

@@ -4,7 +4,7 @@
 // Each note picks the sample zone for its pitch, a velocity layer and a round-robin take, and is shifted to the exact
 // pitch. A note ends with a short release when its length is over. The instrument has its own channel strip: level,
 // pitch, pan, 3-band EQ, compressor and a send to a room reverb.
-import { SongClock } from "./clock";
+import { SongClock, renderScheduled } from "./clock";
 import { INST_FLAT, type InstSettings } from "./instruments";
 
 type Layer = { lo: number; hi: number; files: string[] };
@@ -23,7 +23,7 @@ const SHORT_NOTE = 0.2; // seconds: shorter notes use the staccato takes
 
 export class SampleInstrument {
   private manifest: Manifest | null = null;
-  private ctx: AudioContext | null = null;
+  private ctx: BaseAudioContext | null = null;
   private buffers = new Map<string, AudioBuffer>();
   private lastTake = new Map<string, string>();
   private voices = new Set<{ src: AudioBufferSourceNode; gain: GainNode }>();
@@ -70,7 +70,7 @@ export class SampleInstrument {
   }
 
   /** Builds the channel strip on the context alphaTab plays through, ending in `destination` (the master effects). */
-  attach(ctx: AudioContext, destination: AudioNode) {
+  attach(ctx: BaseAudioContext, destination: AudioNode) {
     if (this.ctx === ctx) return;
     this.dispose();
     this.ctx = ctx;
@@ -120,7 +120,7 @@ export class SampleInstrument {
     this.applySettings();
   }
 
-  private impulse(ctx: AudioContext, seconds: number) {
+  private impulse(ctx: BaseAudioContext, seconds: number) {
     const length = Math.floor(ctx.sampleRate * seconds);
     const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
     for (let c = 0; c < 2; c++) {
@@ -192,7 +192,6 @@ export class SampleInstrument {
     tempos: { tick: number; bpm: number }[],
     onProgress: (fraction: number) => void,
   ) {
-    const ctx = this.ctx;
     const id = ++this.prepareId;
     this.stopVoices();
     this.clock.setTiming(division, tempos);
@@ -204,6 +203,32 @@ export class SampleInstrument {
       track: n.track,
     }));
     this.clock.setEvents(notes);
+    await this.loadSamples(notes, onProgress, id);
+  }
+
+  /**
+   * Renders the notes of the prepared song to audio, faster than realtime, with the same settings and track gains as in
+   * playback (but not the timing offset, which only compensates for live output latency). Null when there is nothing
+   * to render.
+   */
+  async renderOffline(seconds: number, sampleRate: number, signal: AbortSignal, onProgress: (f: number) => void) {
+    const notes = this.clock.all;
+    if (!this.manifest || notes.length === 0) return null;
+    const offline = new OfflineAudioContext(2, Math.ceil(seconds * sampleRate), sampleRate);
+    const inst = new SampleInstrument(this.url);
+    inst.manifest = this.manifest;
+    inst.attach(offline, offline.destination);
+    inst.setSettings(this.fx);
+    inst.trackGain = new Map(this.trackGain);
+    // Samples decoded for playback work in any context, so only the missing ones are fetched again.
+    for (const [file, buffer] of this.buffers) inst.buffers.set(file, buffer);
+    await inst.loadSamples(notes, () => {}, inst.prepareId);
+    return renderScheduled(offline, notes, (n, when) => inst.play(n, when), onProgress, signal);
+  }
+
+  // Loads every take of every layer the notes can reach, and the staccato takes for short notes.
+  private async loadSamples(notes: readonly InstNote[], onProgress: (fraction: number) => void, id: number) {
+    const ctx = this.ctx;
     if (!ctx || !this.manifest) return;
 
     const wanted = new Set<string>();
