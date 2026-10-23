@@ -709,6 +709,7 @@ export async function exportAudio({ format, kbps, metronome, onProgress, signal 
       onProgress({ fraction: (i + f) / steps, renderedMs: f * total, totalMs: total, stage: r.stage });
     report(0);
     const audio = await r.render(report);
+    console.log("[t] stem", r.stage, audio && Math.max(...audio.getChannelData(0).filter((_, j) => j % 100 === 0).map(Math.abs)));
     if (!audio) continue;
     stems.push({ left: audio.getChannelData(0), right: audio.getChannelData(1) });
     for (const t of r.tracks) silenced.add(t);
@@ -729,6 +730,7 @@ export async function exportAudio({ format, kbps, metronome, onProgress, signal 
       const chunk = await exporter.render(CHUNK_MS);
       if (!chunk) break;
       const frames = Math.floor(chunk.samples.length / 2);
+      if (frameAt < 44100 * 8) console.log("[t] chunk", frameAt, chunk.samples.reduce((m, v) => Math.max(m, Math.abs(v)), 0), [...options.trackVolume]);
       for (const { left, right } of stems) {
         for (let i = 0; i < frames && frameAt + i < left.length; i++) {
           chunk.samples[i * 2] += left[frameAt + i];
